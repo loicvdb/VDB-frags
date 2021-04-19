@@ -1,5 +1,4 @@
 #define volumetric
-#include "Background-VDB.frag"
 #include "DE-Raytracer-VDB.frag"
 
 float density(vec3 p) {
@@ -25,16 +24,19 @@ float DE(vec3 pos) {
 }
 
 #preset Default
-FOV = 0.3
-Eye = -4.25756092,-0.517471921,3.67268137
-Target = 3.13498104,0.443053054,-2.9927305
-Up = -0.016564908,0.992069888,0.124591118
-FocalPlane = 4.883721
-Aperture = 0.05573771
-LightDirection = 0.237530396,0.715986149,0.6564626
+FOV = 0.24328594
+Eye = -3.01495774,2.08904206,-4.58523791
+Target = 1.90950617,-1.59685841,3.29916398
+Up = 0.03446139,0.913443386,0.405504131
+FocalPlane = 5.2491694
+Aperture = 0.08196721
+LightDirection = 0.17006804,0.338532877,0.925457915
+LightColor = 1,1,1,15
 SceneRadius = 2
+BackgroundColor = 0,0,0,0
+SamplesPerFrame = 2
 Bounces = 8
-VolumeStepSize = 0.05
-VolumeDensity = 30
+VolumeStepSize = 0.1
+VolumeDensity = 10
 VolumeColor = 0.596078431,0.91372549,1
 #endpreset
