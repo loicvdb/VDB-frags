@@ -32,5 +32,5 @@ FocalPlane = 4.2524918
 Aperture = 0.08196721
 Precision = 0.5
 OneSampleMIS = true
-LightDirection = 0.936591761,0.32312926,-0.13558523
+LightDirection = 0.436002713,0.892918093,-0.11224488
 #endpreset
