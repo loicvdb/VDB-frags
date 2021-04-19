@@ -61,7 +61,7 @@ vec3 color(vec3 pos, vec3 direction);
 // n-blade aperture
 vec2 sampleAperture() {
 	if(Blades < 3) { // circular aperture
-		float a = RANDOM*2.*PI;
+		float a = RANDOM * TWO_PI;
 		return sqrt(RANDOM) * vec2(cos(a), sin(a));
 	}
 	float side = sin(PI / float(Blades));

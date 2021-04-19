@@ -10,7 +10,7 @@
  ****************************************************************/
 
 vec3 lambertImportanceSampling(vec3 V) {
-	float a = RANDOM * 2. * PI;
+	float a = RANDOM * TWO_PI;
 	float r = sqrt(RANDOM);
 	return vec3(sqrt(1. - r * r) * vec2(cos(a), sin(a)), r);
 }
@@ -51,7 +51,7 @@ float henyeyGreensteinIntegral(float cosTheta, float anisotropy){
 vec3 henyeyGreensteinImportanceSampling(float anisotropy) {
 	float cosTheta = 1. + henyeyGreensteinIntegral(-1., anisotropy) - henyeyGreensteinIntegral(RANDOM*2.-1., anisotropy);
 	float r = sqrt(max(1.-cosTheta*cosTheta, 0.));
-	float a = RANDOM * 2. * PI;
+	float a = RANDOM * TWO_PI;
 	return vec3(r*cos(a), r*sin(a), cosTheta);
 }
 
@@ -64,9 +64,9 @@ vec3 henyeyGreensteinBRDF(vec3 L, vec3 color, float anisotropy) {
 }
 
 vec3 isotropicImportanceSampling() {
-	float cosTheta = RANDOM*2.-1.;
+	float cosTheta = RANDOM * 2. - 1.;
 	float r = sqrt(max(1.-cosTheta*cosTheta, 0.));
-	float a = RANDOM*2.*PI;
+	float a = RANDOM * TWO_PI;
 	return vec3(r*cos(a), r*sin(a), cosTheta);
 }
 
