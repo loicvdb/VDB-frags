@@ -154,7 +154,7 @@ vec2 sphereIntersect(vec3 pos, vec3 dir, vec3 spherePos, float sphereRadius) {
 }
 
 #ifdef volumetric
-float getDensity(vec3 pos);
+float density(vec3 pos);
 #endif
 
 #ifndef noDE
@@ -205,7 +205,7 @@ float traceVolume(vec3 pos, vec3 dir, float maxT) {
 	float absorption = 0.;
 	for(int i = 1; i <= VolumeSteps; i++) {
 		float newT = (float(i) - RANDOM * float(VolumeStepRandomising)) * VolumeStepSize;
-        absorption += getDensity(pos+newT*dir)*(newT-t);
+        absorption += density(pos+newT*dir)*(newT-t);
         t = newT;
         if(absorption > bounceThreshold || newT >= maxT) break;
 	}

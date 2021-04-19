@@ -2,7 +2,7 @@
 #include "Background-VDB.frag"
 #include "DE-Raytracer-VDB.frag"
 
-float getDensity(vec3 p) {
+float density(vec3 p) {
 	vec2 z = vec2(p.z, p.z);
 	vec2 c = vec2(p.x, p.y);
 	for(int i = 0; i < 16; i++) {

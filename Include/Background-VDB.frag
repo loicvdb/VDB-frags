@@ -68,12 +68,12 @@ vec3 skyScatter(vec3 dir, vec3 backColor) {
 	float height = 0.;
 	for(int i = 0; i < SkySamples; i++) {
 		if(max(height*SKY_STEP_EXPONENT, -height) > EXP_UPPER) break;
-		float density = exp(-height);
+		float localDensity = exp(-height);
 		float step = exp(height*SKY_STEP_EXPONENT);
 		height += dUp*step;
-		float mAbs = exp(-step*density*mDensity);
-		vec3  rAbs = exp(-step*density*rDensity);
-		contrib += att * (rWeight*(1.-rAbs) + mWeight*(1.-mAbs)) * integrateAbs(density, lUp, rDensity+mDensity);
+		float mAbs = exp(-step*localDensity*mDensity);
+		vec3  rAbs = exp(-step*localDensity*rDensity);
+		contrib += att * (rWeight*(1.-rAbs) + mWeight*(1.-mAbs)) * integrateAbs(localDensity, lUp, rDensity+mDensity);
 		att *= mAbs*rAbs;
     }
 	
