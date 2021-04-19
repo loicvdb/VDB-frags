@@ -60,10 +60,6 @@ uniform float Cycles; slider[0.1,1.1,32.3]
 #endif
 
 #group Material
-uniform bool Metallic; checkbox[false]
-uniform bool Glass; checkbox[false]
-uniform float Roughness; slider[0.,.1,1.]
-uniform float IoR; slider[0.,1.,2.]
 #ifdef volumetric
 uniform float VolumeDensity; slider[0,1.,100.]
 uniform vec3 VolumeColor; color[1,1,1]
