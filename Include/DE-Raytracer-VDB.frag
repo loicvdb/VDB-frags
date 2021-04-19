@@ -23,7 +23,7 @@ bool hitVolume;
 uniform float SceneRadius; slider[0,20.,100]
 #ifndef providesLight
 uniform vec3 LightDirection; slider[(0,0,0),(0,1,0),(0,0,0)]
-uniform vec4 LightColor; color[0,3,100,1.0,1.0,1.0]
+uniform vec4 LightColor; color[0,7,100,1.0,1.0,1.0]
 uniform float LightRadius; slider[0,.01,.5]
 #endif
 #ifndef providesBackground
@@ -113,7 +113,7 @@ vec3 lightSample(vec3 pos, out float dist) {
 	vec3 t = ORTHO(LightDirection);
 	vec3 b = cross(t, LightDirection);
 	mat3 light2Word = inverse(mat3(t, b, LightDirection));
-	float a = RANDOM * 2.0 * PI;
+	float a = RANDOM * TWO_PI;
 	float r =  1. - (1.-cos(LightRadius)) * RANDOM;
 	return vec3(sqrt(1. - r*r) * vec2(cos(a), sin(a)), r) * light2Word;
 }
@@ -126,7 +126,7 @@ float lightPDF(vec3 V) {
 
 bool hitLight(vec3 pos, vec3 dir, float t, out vec3 color) {
 	if(dot(dir, LightDirection) < cos(LightRadius) || t >= 0.) return false;
-	float sphericalCapArea = sin(LightRadius)*sin(LightRadius) / PI;
+	float sphericalCapArea = TWO_PI * (1.-cos(LightRadius));
 	color = LinearLightColor.rgb * LinearLightColor.w / sphericalCapArea;
 	return true;
 }
