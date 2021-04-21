@@ -9,20 +9,18 @@
 
 uniform vec2 pixelSize;
 
-varying vec2 coord;
 varying vec2 viewCoord;
-varying vec2 viewCoord2;
-varying vec2 PixelScale;
-
+varying vec2 texCoord;
+varying vec2 pixelScale;
 
 void main(void) {
-	gl_Position =  gl_Vertex;
-	coord = (gl_ProjectionMatrix*gl_Vertex).xy;
-	coord.x *= pixelSize.y/pixelSize.x;
-	// we will only use gl_ProjectionMatrix to scale and translate, so the following should be OK.
-	PixelScale = vec2(pixelSize.x*gl_ProjectionMatrix[0][0], pixelSize.y*gl_ProjectionMatrix[1][1]);
-	viewCoord = gl_Vertex.xy;
-	viewCoord2 = (gl_ProjectionMatrix*gl_Vertex).xy;
+	// 4 vertices, one for each corner of the tile: (-1,-1), (-1,1), (1,1), (1,-1)
+	gl_Position = gl_Vertex;
+	// we convert the vertex position from [-1,1] to [0,1] for the texture coordinate of the tile
+	texCoord = gl_Vertex.xy*.5+.5;
+	// the projection matrix is used for scaling and translating view coordinates for tile rendering, scaled by the height so we use pixelSize.yy
+	viewCoord = pixelSize.yy * (gl_ProjectionMatrix*gl_Vertex).xy / pixelSize;
+	pixelScale = pixelSize.yy * vec2(gl_ProjectionMatrix[0][0], gl_ProjectionMatrix[1][1]) * 2.; // times 2 because we go from -1 to 1
 }
 #endvertex
 
@@ -44,10 +42,9 @@ uniform float Exposure; slider[0.0,1.0,3.0]
 #group Rendering
 uniform int SamplesPerFrame; slider[1,1,32]
 
-varying vec2 coord;
 varying vec2 viewCoord;
-varying vec2 viewCoord2;
-varying vec2 PixelScale;
+varying vec2 texCoord;
+varying vec2 pixelScale;
 
 #ifdef providesInit
 void init();
@@ -89,7 +86,7 @@ void main() {
 	
 	vec3 c = vec3(0.);
 	for(int i = 0; i < SamplesPerFrame; i++) {
-		vec2 jitteredCoord = coord + 4. * PixelScale*(vec2(RANDOM, RANDOM)-.5);
+		vec2 jitteredCoord = viewCoord + pixelScale*(vec2(RANDOM, RANDOM)-.5);
 		vec3 rayPos = vec3(apertureDim * sampleAperture(), 0.);
 		vec3 rayDir = normalize(vec3(jitteredCoord * FOV, 1.) * FocalPlane - rayPos);
 		c +=  color(Eye + rayPos*cam2world, rayDir*cam2world);
@@ -97,7 +94,7 @@ void main() {
 	c /= float(SamplesPerFrame);
 
 	// Accumulate
-	gl_FragColor = texture2D(backbuffer, viewCoord*.5+.5);
+	gl_FragColor = texture2D(backbuffer, texCoord);
 	gl_FragColor.a++;
 	gl_FragColor.rgb = mix(gl_FragColor.rgb, c, 1./gl_FragColor.a);
 }

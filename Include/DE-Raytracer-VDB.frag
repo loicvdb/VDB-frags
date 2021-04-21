@@ -334,7 +334,7 @@ vec3 BRDF(vec3 V, vec3 L, vec3 pos) {
 vec3 color(vec3 pos, vec3 dir) {
 	
 	if(PreviewPrecision) fovPixelFactor = FOV/Precision/float(PreviewPrecisionHeight);
-	else fovPixelFactor = PixelScale.y*FOV/Precision;
+	else fovPixelFactor = pixelScale.y*FOV/Precision;
 	
 	vec3 att = vec3(1.), outCol = vec3(0.), lightColor;
 	
