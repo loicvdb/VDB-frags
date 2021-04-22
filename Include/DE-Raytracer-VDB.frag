@@ -207,9 +207,9 @@ float traceVolume(vec3 pos, vec3 dir, float maxT) {
 		float newT = (float(i) - RANDOM * float(VolumeStepRandomising)) * VolumeStepSize;
         absorption += density(pos+newT*dir)*(newT-t);
         t = newT;
-        if(absorption > bounceThreshold || newT >= maxT) break;
+        if(absorption > bounceThreshold || t >= maxT) break;
 	}
-    return absorption > bounceThreshold ? t : -1.;
+    return absorption > bounceThreshold && t < maxT ? t : -1.;
 }
 #endif
 
