@@ -48,7 +48,8 @@ flat varying vec2 fragShift;
 #define Texture 1
 #define Cubemap 2
 
-#group Textures
+#group Textures/Cubemaps
+
 #if iChannel0==Texture
 #undef iChannel0
 uniform sampler2D iChannel0; file[texture2.jpg]
@@ -66,7 +67,6 @@ uniform sampler2D iChannel2; file[texture2.jpg]
 uniform sampler2D iChannel3; file[texture2.jpg]
 #endif
 
-#group Cubemaps
 #if iChannel0==Cubemap
 #undef iChannel0
 uniform samplerCube iChannel0; file[cubemap.png]
@@ -96,14 +96,6 @@ void main() {
 	mainImage(gl_FragColor, gl_FragCoord.xy+fragShift);
 }
 
-vec4 tiledTexelFetch(ivec2 u, int lod) {
-	return texelFetch(backbuffer, u-ivec2(fragShift), lod);
-}
-
-vec4 tiledTexture(vec2 u, float lod) {
-	return texture(backbuffer, ((u*iResolution.xy)-fragShift)*pixelSize, lod);
-}
-
-vec4 tiledTexture(vec2 u) {
-	return tiledTexture(u, 0.);
+vec4 backbufferPixel(vec2 u) {
+	return texelFetch(backbuffer, ivec2(u-fragShift), 0);
 }
