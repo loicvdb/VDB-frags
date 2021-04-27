@@ -19,6 +19,28 @@ uniform float Zoom; slider[0,.1,100] NotLockable
 uniform bool MouseClickedIn; checkbox[false]
 uniform bool DivideByAlpha; checkbox[true]
 
+#group Textures
+#ifdef iChannel1Texture
+uniform sampler2D iChannel1; file[texture2.jpg]
+#endif
+#ifdef iChannel2Texture
+uniform sampler2D iChannel2; file[texture2.jpg]
+#endif
+#ifdef iChannel3Texture
+uniform sampler2D iChannel3; file[texture2.jpg]
+#endif
+
+#group Cubemaps
+#ifndef iChannel1Texture
+uniform samplerCube iChannel1; file[cubemap.png]
+#endif
+#ifndef iChannel2Texture
+uniform samplerCube iChannel2; file[cubemap.png]
+#endif
+#ifndef iChannel3Texture
+uniform samplerCube iChannel3; file[cubemap.png]
+#endif
+
 #group Post
 uniform float Exposure; slider[0.0,1.0,30.0]
 uniform float Gamma; slider[0.0,1.0,5.0];
