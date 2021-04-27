@@ -4,26 +4,23 @@
 #vertex
 
 uniform vec2 pixelSize;
-uniform int subframe;
 uniform float time;
 
 #group Camera
-uniform vec2 Center; slider[(-10,-10),(0,0),(10,10)] NotLockable
-uniform float Zoom; slider[0,.1,100] NotLockable
+uniform vec2 Center; slider[(0,0),(0,0),(1,1)] NotLockable
+uniform float Zoom; slider[0,2,100] NotLockable
 uniform bool MouseClickedIn; checkbox[false]
 
-flat varying float iTime;
-flat varying int iFrame;
-flat varying vec3 iResolution;
-flat varying vec4 iMouse;
+varying float iTime;
+varying vec3 iResolution;
+varying vec4 iMouse;
 
-flat varying vec2 fragShift;
+varying vec2 fragShift;
 
 void main(void) {
 	iTime = time;
-	iFrame = subframe;
 	iResolution = abs(vec3(1./(pixelSize*vec2(gl_ProjectionMatrix[0][0],gl_ProjectionMatrix[1][1])), 1.));
-	iMouse = vec4(vec2(1,MouseClickedIn?1:-1).xxyy*(.5-Center.xyxy*.05)*iResolution.xyxy);
+	iMouse = vec4(vec2(1,MouseClickedIn?1:-1).xxyy*((1.-Center.xyxy)*iResolution.xyxy+.5));
 	
 	fragShift = ((gl_ProjectionMatrix * vec4(-1, -1, 0, 1)).xy*.5+.5)*iResolution.xy;
 	
@@ -37,13 +34,14 @@ void main(void) {
 
 uniform sampler2D backbuffer;
 uniform vec2 pixelSize;
+uniform int subframe;
 
-flat varying float iTime;
-flat varying int iFrame;
-flat varying vec3 iResolution;
-flat varying vec4 iMouse;
+varying float iTime;
+varying vec3 iResolution;
+varying vec4 iMouse;
+#define iFrame subframe
 
-flat varying vec2 fragShift;
+varying vec2 fragShift;
 
 #define Texture 1
 #define Cubemap 2
@@ -97,5 +95,5 @@ void main() {
 }
 
 vec4 backbufferPixel() {
-	return texelFetch(backbuffer, ivec2(gl_FragCoord.xy), 0);
+	return texture2D(backbuffer, gl_FragCoord.xy*pixelSize);
 }

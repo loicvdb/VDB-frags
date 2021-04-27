@@ -1,4 +1,4 @@
-#version 330
+#version 130
 #include "Shadertoy-VDB.frag"
 
 void mainImage( out vec4 fragColor, in vec2 fragCoord )
