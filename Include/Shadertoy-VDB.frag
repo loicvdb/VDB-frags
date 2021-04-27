@@ -31,36 +31,56 @@ void main(void) {
 }
 #endvertex
 
+#extension GL_EXT_gpu_shader4 : enable
+#extension GL_ARB_gpu_shader5 : enable
+#extension GL_ARB_shader_bit_encoding : enable
+
 uniform sampler2D backbuffer;
+uniform vec2 pixelSize;
 
 flat varying float iTime;
 flat varying int iFrame;
 flat varying vec3 iResolution;
 flat varying vec4 iMouse;
-#define iChannel0 backbuffer
 
 flat varying vec2 fragShift;
 
+#define Texture 1
+#define Cubemap 2
 
 #group Textures
-#ifdef iChannel1Texture
+#if iChannel0==Texture
+#undef iChannel0
+uniform sampler2D iChannel0; file[texture2.jpg]
+#endif
+#if iChannel1==Texture
+#undef iChannel1
 uniform sampler2D iChannel1; file[texture2.jpg]
 #endif
-#ifdef iChannel2Texture
+#if iChannel2==Texture
+#undef iChannel2
 uniform sampler2D iChannel2; file[texture2.jpg]
 #endif
-#ifdef iChannel3Texture
+#if iChannel3==Texture
+#undef iChannel3
 uniform sampler2D iChannel3; file[texture2.jpg]
 #endif
 
 #group Cubemaps
-#ifndef iChannel1Texture
+#if iChannel0==Cubemap
+#undef iChannel0
+uniform samplerCube iChannel0; file[cubemap.png]
+#endif
+#if iChannel1==Cubemap
+#undef iChannel1
 uniform samplerCube iChannel1; file[cubemap.png]
 #endif
-#ifndef iChannel2Texture
+#if iChannel2==Cubemap
+#undef iChannel2
 uniform samplerCube iChannel2; file[cubemap.png]
 #endif
-#ifndef iChannel3Texture
+#if iChannel3==Cubemap
+#undef iChannel3
 uniform samplerCube iChannel3; file[cubemap.png]
 #endif
 
@@ -76,6 +96,14 @@ void main() {
 	mainImage(gl_FragColor, gl_FragCoord.xy+fragShift);
 }
 
-#extension GL_EXT_gpu_shader4 : enable
-#extension GL_ARB_gpu_shader5 : enable
-#extension GL_ARB_shader_bit_encoding : enable
+vec4 tiledTexelFetch(ivec2 u, int lod) {
+	return texelFetch(backbuffer, u-ivec2(fragShift), lod);
+}
+
+vec4 tiledTexture(vec2 u, float lod) {
+	return texture(backbuffer, ((u*iResolution.xy)-fragShift)*pixelSize, lod);
+}
+
+vec4 tiledTexture(vec2 u) {
+	return tiledTexture(u, 0.);
+}
