@@ -2,7 +2,12 @@
 #buffer RGBA32F
 #buffershader "Shadertoy-VDB-BufferShader.frag"
 #vertex
+uniform vec2 pixelSize;
+varying vec3 iResolution;
+varying vec2 fragShift;
 void main(void) {
+	iResolution = vec3(1./(pixelSize*vec2(gl_ProjectionMatrix[0][0],gl_ProjectionMatrix[1][1])), 1.);
+	fragShift = ((gl_ProjectionMatrix * vec4(-1, -1, 0, 1)).xy*.5+.5)*iResolution.xy;
 	gl_Position = gl_Vertex;
 }
 #endvertex
@@ -11,6 +16,9 @@ uniform int subframe;
 uniform float time;
 uniform vec2 pixelSize;
 uniform sampler2D backbuffer;
+
+varying vec3 iResolution;
+varying vec2 fragShift;
 
 #group Camera
 uniform vec2 Center; slider[(-10,-10),(0,0),(10,10)] NotLockable
@@ -48,14 +56,13 @@ uniform bool DivideByAlpha; checkbox[true]
 void mainImage( out vec4 fragColor, in vec2 fragCoord );
 
 void main() {
-	mainImage(gl_FragColor, gl_FragCoord.xy);
+	mainImage(gl_FragColor, gl_FragCoord.xy+fragShift);
 }
 
 #define iChannel0 backbuffer
 #define iTime time
 #define iFrame subframe
-#define iResolution vec3(1./pixelSize, 1.)
-#define iMouse vec4(vec2(1,MouseClickedIn?1:-1).xxyy*(10.-Center.xyxy)/(20.*pixelSize.xyxy))
+#define iMouse vec4(vec2(1,MouseClickedIn?1:-1).xxyy*(10.-Center.xyxy)*.05*iResolution.xyxy)
 
 #extension GL_EXT_gpu_shader4 : enable
 #extension GL_ARB_gpu_shader5 : enable
