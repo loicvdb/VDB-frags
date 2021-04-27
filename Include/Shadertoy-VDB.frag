@@ -1,6 +1,4 @@
 #version 330
-precision highp float;
-precision highp int;
 #donotrun
 #buffer RGBA32F
 #buffershader "Shadertoy-VDB-BufferShader.frag"
