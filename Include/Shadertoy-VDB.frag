@@ -1,4 +1,3 @@
-#version 330
 #donotrun
 #buffer RGBA32F
 #buffershader "Shadertoy-VDB-BufferShader.frag"
@@ -17,7 +16,6 @@ uniform sampler2D backbuffer;
 uniform vec2 Center; slider[(-10,-10),(0,0),(10,10)] NotLockable
 uniform float Zoom; slider[0,.1,100] NotLockable
 uniform bool MouseClickedIn; checkbox[false]
-uniform bool DivideByAlpha; checkbox[true]
 
 #group Textures
 #ifdef iChannel1Texture
@@ -44,6 +42,8 @@ uniform samplerCube iChannel3; file[cubemap.png]
 #group Post
 uniform float Exposure; slider[0.0,1.0,30.0]
 uniform float Gamma; slider[0.0,1.0,5.0];
+uniform bool Tonemapping; checkbox[true];
+uniform bool DivideByAlpha; checkbox[true]
 
 void mainImage( out vec4 fragColor, in vec2 fragCoord );
 

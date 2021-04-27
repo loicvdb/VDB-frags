@@ -17,6 +17,7 @@ void main(void) {
 uniform float Gamma;
 uniform float Exposure;
 uniform bool DivideByAlpha;
+uniform bool Tonemapping;
 
 varying vec2 coord;
 uniform sampler2D frontbuffer;
@@ -33,7 +34,7 @@ void main() {
 	c = max(c, vec3(0.));
 	
 	// Tonemapping & convertion to sRGB
-	c = tonemapping(c);
+	c = Tonemapping ? tonemapping(c) : c;
 	
 	// Gamma
 	c = pow(c, vec3(1.0/Gamma));
