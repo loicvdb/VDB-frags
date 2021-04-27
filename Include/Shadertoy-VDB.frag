@@ -96,6 +96,6 @@ void main() {
 	mainImage(gl_FragColor, gl_FragCoord.xy+fragShift);
 }
 
-vec4 backbufferPixel(vec2 u) {
-	return texelFetch(backbuffer, ivec2(u-fragShift), 0);
+vec4 backbufferPixel() {
+	return texelFetch(backbuffer, ivec2(gl_FragCoord.xy), 0);
 }
