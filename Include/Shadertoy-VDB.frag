@@ -1,4 +1,3 @@
-#version 130
 #donotrun
 #buffer RGBA32F
 #buffershader "Shadertoy-VDB-BufferShader.frag"
