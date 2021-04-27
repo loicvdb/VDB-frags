@@ -2,28 +2,45 @@
 #buffer RGBA32F
 #buffershader "Shadertoy-VDB-BufferShader.frag"
 #vertex
-uniform vec2 pixelSize;
-varying vec3 iResolution;
-varying vec2 fragShift;
-void main(void) {
-	iResolution = vec3(1./(pixelSize*vec2(gl_ProjectionMatrix[0][0],gl_ProjectionMatrix[1][1])), 1.);
-	fragShift = ((gl_ProjectionMatrix * vec4(-1, -1, 0, 1)).xy*.5+.5)*iResolution.xy;
-	gl_Position = gl_Vertex;
-}
-#endvertex
 
+uniform vec2 pixelSize;
 uniform int subframe;
 uniform float time;
-uniform vec2 pixelSize;
-uniform sampler2D backbuffer;
-
-varying vec3 iResolution;
-varying vec2 fragShift;
 
 #group Camera
 uniform vec2 Center; slider[(-10,-10),(0,0),(10,10)] NotLockable
 uniform float Zoom; slider[0,.1,100] NotLockable
 uniform bool MouseClickedIn; checkbox[false]
+
+flat varying float iTime;
+flat varying int iFrame;
+flat varying vec3 iResolution;
+flat varying vec4 iMouse;
+
+flat varying vec2 fragShift;
+
+void main(void) {
+	iTime = time;
+	iFrame = subframe;
+	iResolution = abs(vec3(1./(pixelSize*vec2(gl_ProjectionMatrix[0][0],gl_ProjectionMatrix[1][1])), 1.));
+	iMouse = vec4(vec2(1,MouseClickedIn?1:-1).xxyy*(.5-Center.xyxy*.05)*iResolution.xyxy);
+	
+	fragShift = ((gl_ProjectionMatrix * vec4(-1, -1, 0, 1)).xy*.5+.5)*iResolution.xy;
+	
+	gl_Position = gl_Vertex;
+}
+#endvertex
+
+uniform sampler2D backbuffer;
+
+flat varying float iTime;
+flat varying int iFrame;
+flat varying vec3 iResolution;
+flat varying vec4 iMouse;
+#define iChannel0 backbuffer
+
+flat varying vec2 fragShift;
+
 
 #group Textures
 #ifdef iChannel1Texture
@@ -58,11 +75,6 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord );
 void main() {
 	mainImage(gl_FragColor, gl_FragCoord.xy+fragShift);
 }
-
-#define iChannel0 backbuffer
-#define iTime time
-#define iFrame subframe
-#define iMouse vec4(vec2(1,MouseClickedIn?1:-1).xxyy*(10.-Center.xyxy)*.05*iResolution.xyxy)
 
 #extension GL_EXT_gpu_shader4 : enable
 #extension GL_ARB_gpu_shader5 : enable
