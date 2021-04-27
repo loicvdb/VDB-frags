@@ -37,7 +37,7 @@ uniform float ApertureRatio; slider[.2,2.,5.]
 uniform int Blades; slider[0,6,12]
 uniform float BladeRotation; slider[0,0,1]
 #group Post
-uniform float Gamma; slider[0.0,2.2,5.0]
+uniform float Gamma; slider[0.0,1.,5.0]
 uniform float Exposure; slider[0.0,1.0,3.0]
 #group Rendering
 uniform int SamplesPerFrame; slider[1,1,32]

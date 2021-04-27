@@ -16,13 +16,15 @@ void main(void) {
 #group Post
 uniform float Gamma;
 uniform float Exposure;
+uniform bool DivideByAlpha;
 
 varying vec2 coord;
 uniform sampler2D frontbuffer;
 
 
 void main() {
-    vec3 c = texture2D(frontbuffer, coord*.5+.5).rgb;
+	vec4 tex = texture2D(frontbuffer, coord*.5+.5);
+    vec3 c = DivideByAlpha ? tex.rgb / tex.a : tex.rgb;
 	
 	// Exposure
 	c *= Exposure;
