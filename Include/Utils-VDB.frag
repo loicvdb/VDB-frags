@@ -11,10 +11,12 @@ const float PI = 3.14159265358979323846264;
 const float TWO_PI = 2. * PI;
 const float INV_PI = 1. / PI;
 
+#ifndef noUniformImport
 uniform int subframe;
 uniform float time;
 uniform vec2 pixelSize;
 uniform sampler2D backbuffer;
+#endif
 
 #define ORTHO( v ) normalize(abs(v.x)>abs(v.z) ? vec3(-v.y,v.x,0.) : vec3(0.,-v.z,v.y))
 #define RANDOM (float(hash(seedSquirrel3++))/4294967295.)
