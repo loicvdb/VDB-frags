@@ -35,6 +35,46 @@ vec3 translucentBRDF(vec3 V, vec3 L, vec3 color) {
 	return color * .5 * INV_PI;
 }
 
+vec3 sampleGGXVNDF(vec3 V_, vec2 alpha){
+	
+	// stretch view
+	vec3 V = normalize(vec3(alpha * V_.xy, V_.z));
+	
+	// orthonormal basis
+	vec3 T1 = ORTHO(V);
+	vec3 T2 = cross(T1, V);
+	
+	// sample point with polar coordinates (r, phi)
+	float U1 = RANDOM;
+	float U2 = RANDOM;
+	float a = 1.0 / (1.0 + V.z);
+	float r = sqrt(U1);
+	float phi = (U2<a) ? U2/a * PI : PI + (U2-a)/(1.0-a) * PI;
+	float P1 = r*cos(phi);
+	float P2 = r*sin(phi)*((U2<a) ? 1.0 : V.z);
+	
+	// compute normal
+	vec3 N = P1*T1 + P2*T2 + sqrt(max(0.0, 1.0 - P1*P1 - P2*P2))*V;
+	
+	// unstretch
+	N = normalize(vec3(alpha*N.xy, max(0.0, N.z)));
+	
+	return N;
+}
+
+vec3 glossyGGXImportanceSampling(vec3 V, vec2 alpha) {
+	vec3 N = sampleGGXVNDF(V, alpha);
+	return reflect(-V, N);
+}
+
+float glossyGGXPDF(vec3 V, vec3 R, vec2 alpha) {
+	// TODO: this
+	return -1.;
+}
+
+vec3 glossyGGXBRDF(vec3 V, vec3 L, vec2 alpha, vec3 color) {
+	return glossyGGXPDF(V, L, alpha) * color;
+}
 
 
 
