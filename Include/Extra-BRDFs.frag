@@ -80,12 +80,12 @@ vec3 glossyGGXImportanceSampling(vec3 V, float alpha) {
 }
 
 float glossyGGXPDF(vec3 V, vec3 R, float alpha) {
-	if(V.z < 0.) return 0.;
+	if(V.z < 0. || R.z < 0.) return 0.;
 	return GGXVNDF(V, normalize(V+R), alpha*alpha) * .5;	// DON'T ASK ME WHERE THAT .5 COMES FROM IT FIXES EVERYTHING AND I DON'T KNOW WHY
 }
 
 vec3 glossyGGXBRDF(vec3 V, vec3 L, float alpha, vec3 color) {
-	if(V.z < 0.) return vec3(0.);
+	if(V.z < 0. || L.z < 0.) return vec3(0.);
 	float a2 = alpha * alpha;
 	float G = GGXG1(V.z, a2) * GGXG1(L.z, a2);
 	float D = GGXNDF(normalize(V+L).z, a2);
