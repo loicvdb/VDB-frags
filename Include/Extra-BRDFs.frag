@@ -35,7 +35,20 @@ vec3 translucentBRDF(vec3 V, vec3 L, vec3 color) {
 	return color * .5 * INV_PI;
 }
 
-vec3 sampleGGXVNDF(vec3 V_, vec2 alpha){
+float GGXG1(float NoV, float a2) {
+	return 2. * NoV / (NoV + sqrt(a2 + (1. - a2) * NoV*NoV));
+}
+
+float GGXNDF(float NoM, float a2) {
+	float d = NoM * NoM * (a2 - 1.) + 1.;
+	return INV_PI * a2 / (d*d);
+}
+
+float GGXVNDF(vec3 V, vec3 H, float a2) {
+	return GGXG1(V.z, a2) * GGXNDF(H.z, a2) / (2. * V.z);
+}
+
+vec3 sampleGGXVNDF(vec3 V_, float alpha) {
 	
 	// stretch view
 	vec3 V = normalize(vec3(alpha * V_.xy, V_.z));
@@ -62,18 +75,21 @@ vec3 sampleGGXVNDF(vec3 V_, vec2 alpha){
 	return N;
 }
 
-vec3 glossyGGXImportanceSampling(vec3 V, vec2 alpha) {
-	vec3 N = sampleGGXVNDF(V, alpha);
-	return reflect(-V, N);
+vec3 glossyGGXImportanceSampling(vec3 V, float alpha) {
+	return reflect(-V, sampleGGXVNDF(V, alpha));
 }
 
-float glossyGGXPDF(vec3 V, vec3 R, vec2 alpha) {
-	// TODO: this
-	return -1.;
+float glossyGGXPDF(vec3 V, vec3 R, float alpha) {
+	if(V.z < 0.) return 0.;
+	return GGXVNDF(V, normalize(V+R), alpha*alpha) * .5;	// DON'T ASK ME WHERE THAT .5 COMES FROM IT FIXES EVERYTHING AND I DON'T KNOW WHY
 }
 
-vec3 glossyGGXBRDF(vec3 V, vec3 L, vec2 alpha, vec3 color) {
-	return glossyGGXPDF(V, L, alpha) * color;
+vec3 glossyGGXBRDF(vec3 V, vec3 L, float alpha, vec3 color) {
+	if(V.z < 0.) return vec3(0.);
+	float a2 = alpha * alpha;
+	float G = GGXG1(V.z, a2) * GGXG1(L.z, a2);
+	float D = GGXNDF(normalize(V+L).z, a2);
+	return color * G * D / (4. * V.z * L.z);
 }
 
 
