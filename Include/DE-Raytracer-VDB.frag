@@ -224,7 +224,7 @@ float trace(vec3 pos, vec3 dir, float maxT);
 float trace(vec3 pos, vec3 dir, float maxT) {
 	vec2 sT = sphereIntersect(pos, dir, vec3(0.), SceneRadius);
     float t0 = max(0., sT.x);
-	maxT = combine(maxT, sT.y);
+	maxT = combine(maxT, sT.y - t0);
     pos += t0 * dir;
 	
 	float t = -1.;
