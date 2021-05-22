@@ -101,7 +101,7 @@ float schlickFresnel(float cosTheta, float r0) {
 
 float schlickFresnel(vec3 V, vec3 N, float eta) {
 	float cosTheta = dot(V, N);
-	float sqrtR0 = (eta - 1.) / (eta + 1.);
+	float sqrtR0 = (1. - eta) / (1. + eta);
 	return schlickFresnel(cosTheta, sqrtR0*sqrtR0);
 }
 
