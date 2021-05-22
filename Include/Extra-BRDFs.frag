@@ -118,9 +118,9 @@ vec3 clearcoatGGXImportanceSampling(vec3 V, float alpha, float ior) {
 
 float clearcoatGGXPDF(vec3 V, vec3 R, float alpha, float ior) {
 	if(V.z <= 0. || R.z <= 0.) return 0.;
-	float glossy = glossyGGXPDF(V, R, alpha);
-	float lambert = lambertPDF(V, R);
-	return mix(lambert, glossy, schlickFresnel(V, normalize(V+R), ior));
+	float g = glossyGGXPDF(V, R, alpha);
+	float l = lambertPDF(V, R);
+	return mix(l, g, schlickFresnel(V, normalize(V+R), ior));
 }
 
 vec3 clearcoatGGXBRDF(vec3 V, vec3 L, float alpha, float ior, vec3 color) {
@@ -129,9 +129,9 @@ vec3 clearcoatGGXBRDF(vec3 V, vec3 L, float alpha, float ior, vec3 color) {
 	vec3 h = normalize(V+L);
 	float G = GGXG1(V.z, a2) * GGXG1(L.z, a2);
 	float D = GGXNDF(h.z, a2);
-	vec3 glossy = vec3(G * D / (4. * V.z * L.z));
-	vec3 lambert = color * INV_PI;
-	return mix(lambert, glossy, schlickFresnel(V, h, ior));
+	vec3 g = vec3(G * D / (4. * V.z * L.z));
+	vec3 l = color * INV_PI;
+	return mix(l, g, schlickFresnel(V, h, ior));
 }
 
 
