@@ -92,6 +92,44 @@ vec3 glossyGGXBRDF(vec3 V, vec3 L, float alpha, vec3 color) {
 	return color * G * D / (4. * V.z * L.z);
 }
 
+// could be useful for metals
+float schlickFresnel(float cosTheta, float r0) {
+	float c = 1. - cosTheta;
+	float c2 = c*c;
+	return r0 + (1. - r0) * (c2*c2*c);
+}
+
+float schlickFresnel(vec3 V, vec3 N, float eta) {
+	float cosTheta = dot(V, N);
+	float sqrtR0 = (eta - 1.) / (eta + 1.);
+	return schlickFresnel(cosTheta, sqrtR0*sqrtR0);
+}
+
+vec3 clearcoatGGXImportanceSampling(vec3 V, float alpha, float ior) {
+	vec3 h = sampleGGXVNDF(V, alpha);
+	float F = schlickFresnel(V, h, ior);
+	vec3 R = (RANDOM < F) ? reflect(-V, h) : lambertImportanceSampling(V);
+	return R;
+}
+
+float clearcoatGGXPDF(vec3 V, vec3 R, float alpha, float ior) {
+	if(V.z <= 0. || R.z <= 0.) return 0.;
+	float glossy = glossyGGXPDF(V, R, alpha);
+	float lambert = lambertPDF(V, R);
+	return mix(lambert, glossy, schlickFresnel(V, normalize(V+R), ior));
+}
+
+vec3 clearcoatGGXBRDF(vec3 V, vec3 L, float alpha, float ior, vec3 color) {
+	if(V.z <= 0. || L.z <= 0.) return vec3(0.);
+	float a2 = alpha * alpha;
+	vec3 h = normalize(V+L);
+	float G = GGXG1(V.z, a2) * GGXG1(L.z, a2);
+	float D = GGXNDF(h.z, a2);
+	vec3 glossy = vec3(G * D / (4. * V.z * L.z));
+	vec3 lambert = color * INV_PI;
+	return mix(lambert, glossy, schlickFresnel(V, h, ior));
+}
+
 
 
 /****************************************************************

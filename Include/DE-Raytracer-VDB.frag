@@ -61,6 +61,7 @@ uniform float Cycles; slider[0.1,1.1,32.3]
 
 #group Material
 uniform float Roughness; slider[0,.1,1.]
+uniform float IoR; slider[1,1.5,2.5]
 #ifdef volumetric
 uniform float VolumeDensity; slider[0,1.,100.]
 uniform vec3 VolumeColor; color[1,1,1]
@@ -297,7 +298,7 @@ vec3 BRDFSample(vec3 V) {
 	} else
 	#endif
 	{
-		return glossyGGXImportanceSampling(V, Roughness);
+		return clearcoatGGXImportanceSampling(V, Roughness, IoR);
 	}
 }
 
@@ -308,7 +309,7 @@ float BRDFPDF(vec3 V, vec3 R) {
 	} else
 	#endif
 	{
-		return glossyGGXPDF(V, R, Roughness);
+		return clearcoatGGXPDF(V, R, Roughness, IoR);
 	}
 }
 
@@ -321,7 +322,7 @@ vec3 BRDF(vec3 V, vec3 L, vec3 pos) {
 	#endif
 	{
 		vec3 color = clamp(baseColor(pos, nTrace), vec3(0.), vec3(1.)) * linear2acescg;
-		return glossyGGXBRDF(V, L, Roughness, color);
+		return clearcoatGGXBRDF(V, L, Roughness, IoR, color);
 	}
 }
 
