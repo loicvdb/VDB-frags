@@ -15,7 +15,7 @@
 #group Scene
 uniform vec3 LightDirection; slider[(0,0,0),(0,1,0),(0,0,0)]
 uniform vec4 LightColor; color[0,7,100,1.0,1.0,1.0]
-uniform float LightRadius; slider[0.00001,.01,.5]
+uniform float LightRadius; slider[0.002,.01,.75]
 uniform int SkySamples; slider[0,16,32]
 uniform vec3 SkyUp; slider[(0,0,0),(0,1,0),(0,0,0)]
 uniform vec4 RayleighColor; color[0,.3,1,.5,.75,.95]

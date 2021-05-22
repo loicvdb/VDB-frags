@@ -24,7 +24,7 @@ uniform float SceneRadius; slider[0,20.,100]
 #ifndef providesLight
 uniform vec3 LightDirection; slider[(0,0,0),(0,1,0),(0,0,0)]
 uniform vec4 LightColor; color[0,7,100,1.0,1.0,1.0]
-uniform float LightRadius; slider[0.00001,.01,.5]
+uniform float LightRadius; slider[0.002,.01,.75]
 #endif
 #ifndef providesBackground
 uniform vec4 BackgroundColor; color[0,1,3,.5,.75,1.]
@@ -60,6 +60,8 @@ uniform float Cycles; slider[0.1,1.1,32.3]
 #endif
 
 #group Material
+uniform float Roughness; slider[0.001,.1,1.]
+uniform float IoR; slider[1,1.5,2.5]
 #ifdef volumetric
 uniform float VolumeDensity; slider[0,1.,100.]
 uniform vec3 VolumeColor; color[1,1,1]
@@ -288,6 +290,10 @@ vec3 baseColor(vec3 pos, vec3 n) {
 /****************************************************************
  * BRDFs n stuff.
  ****************************************************************/
+ 
+ // we define the materials for the preprocessor
+ #define clearcoat 1
+ #define glossy 2
 
 vec3 BRDFSample(vec3 V) {
 	#ifdef volumetric
@@ -296,7 +302,15 @@ vec3 BRDFSample(vec3 V) {
 	} else
 	#endif
 	{
+		#if MATERIAL == clearcoat
+		return clearcoatGGXImportanceSampling(V, Roughness, IoR);
+		#else
+		#if MATERIAL == glossy
+		return glossyGGXImportanceSampling(V, Roughness);
+		#else
 		return lambertImportanceSampling(V);
+		#endif
+		#endif
 	}
 }
 
@@ -307,7 +321,15 @@ float BRDFPDF(vec3 V, vec3 R) {
 	} else
 	#endif
 	{
+		#if MATERIAL == clearcoat
+		return clearcoatGGXPDF(V, R, Roughness, IoR);
+		#else
+		#if MATERIAL == glossy
+		return glossyGGXPDF(V, R, Roughness);
+		#else
 		return lambertPDF(V, R);
+		#endif
+		#endif
 	}
 }
 
@@ -320,7 +342,15 @@ vec3 BRDF(vec3 V, vec3 L, vec3 pos) {
 	#endif
 	{
 		vec3 color = clamp(baseColor(pos, nTrace), vec3(0.), vec3(1.)) * linear2acescg;
+		#if MATERIAL == clearcoat
+		return clearcoatGGXBRDF(V, L, Roughness, IoR, color);
+		#else
+		#if MATERIAL == glossy
+		return glossyGGXBRDF(V, L, Roughness, color);
+		#else
 		return lambertBRDF(V, L, color);
+		#endif
+		#endif
 	}
 }
 
