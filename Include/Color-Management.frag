@@ -30,11 +30,11 @@ vec3 acescg2srgb(vec3 c) {
 vec3 tonemapping(vec3 x) {
 	// probably not proper ACES, but it looks nice
 	const float a = 2.51;
-    const float b = 0.03;
-    const float c = 2.43;
-    const float d = 0.59;
-    const float e = 0.14;
-    return (x*(a*x+b))/(x*(c*x+d)+e);
+	const float b = 0.03;
+	const float c = 2.43;
+	const float d = 0.59;
+	const float e = 0.14;
+	return (x*(a*x+b))/(x*(c*x+d)+e);
 }
 
 #endif
