@@ -24,7 +24,7 @@ uniform float SceneRadius; slider[0,20.,100]
 #ifndef providesLight
 uniform vec3 LightDirection; slider[(0,0,0),(0,1,0),(0,0,0)]
 uniform vec4 LightColor; color[0,7,100,1.0,1.0,1.0]
-uniform float LightRadius; slider[0.00001,.01,.5]
+uniform float LightRadius; slider[0.002,.01,.75]
 #endif
 #ifndef providesBackground
 uniform vec4 BackgroundColor; color[0,1,3,.5,.75,1.]
@@ -60,7 +60,7 @@ uniform float Cycles; slider[0.1,1.1,32.3]
 #endif
 
 #group Material
-uniform float Roughness; slider[0,.1,1.]
+uniform float Roughness; slider[0.001,.1,1.]
 uniform float IoR; slider[1,1.5,2.5]
 #ifdef volumetric
 uniform float VolumeDensity; slider[0,1.,100.]
