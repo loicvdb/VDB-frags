@@ -7,6 +7,7 @@
 
 #define SRGB_GAMMA 2.2
 
+// from https://www.colour-science.org/apps/
 const mat3 linear2acescg = mat3(0.613117812906440, 0.341181995855625, 0.045787344282337, 0.069934082307513, 0.918103037508582, 0.011932775530201, 0.020462992637737, 0.106768663382511, 0.872715910619442);
 const mat3 acescg2linear = inverse(linear2acescg);
 
@@ -26,15 +27,11 @@ vec3 acescg2srgb(vec3 c) {
 	return linear2srgb(acescg2linear * c);
 }
 
-// takes linear input and returns sRGB
-vec3 tonemapping(vec3 x) {
-	// probably not proper ACES, but it looks nice
-	const float a = 2.51;
-	const float b = 0.03;
-	const float c = 2.43;
-	const float d = 0.59;
-	const float e = 0.14;
-	return (x*(a*x+b))/(x*(c*x+d)+e);
+// from https://github.com/TheRealMJP/BakingLab/blob/master/BakingLab/ACES.hlsl
+vec3 RRTAndODTFit(vec3 v){
+	vec3 a = v * (v + 0.0245786f) - 0.000090537f;
+	vec3 b = v * (0.983729f * v + 0.4329510f) + 0.238081f;
+	return a / b;
 }
 
 #endif

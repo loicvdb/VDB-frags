@@ -457,5 +457,5 @@ vec3 color(vec3 pos, vec3 dir) {
 		if(dot(att, vec3(1)) <= 0.) break;
 	}
 	if(outCol != outCol) return vec3(0.);
-	return outCol * acescg2linear;
+	return outCol * acescg2linear;		// we return sRGB for compatility with other buffer shaders / 3D cameras
 }

@@ -27,11 +27,17 @@ void main() {
 	// Exposure
 	c *= Exposure;
 	
+	// To ACEScg (we assume the frontbuffer is sRGB for compatilibity with other frags)
+	c = c * linear2acescg;
+	
 	// Clamping the negatives
 	c = max(c, vec3(0.));
 	
-	// Tonemapping & convertion to sRGB
-	c = tonemapping(c);
+	// Tonemapping
+	c = RRTAndODTFit(c);
+	
+	// Back to linear
+	c = c * acescg2linear;
 	
 	// Gamma
 	c = pow(c, vec3(1.0/Gamma));
