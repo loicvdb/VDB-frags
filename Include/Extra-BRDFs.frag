@@ -92,11 +92,15 @@ vec3 glossyGGXBRDF(vec3 V, vec3 L, float alpha, vec3 color) {
 	return color * G * D / (4. * V.z * L.z);
 }
 
-// could be useful for metals
 float schlickFresnel(float cosTheta, float r0) {
 	float c = 1. - cosTheta;
-	float c2 = c*c;
-	return r0 + (1. - r0) * (c2*c2*c);
+	return r0 + (1. - r0) * (c*c*c*c*c);
+}
+
+// could be useful for metals
+vec3 schlickFresnel(float cosTheta, vec3 r0) {
+	float c = 1. - cosTheta;
+	return r0 + (1. - r0) * (c*c*c*c*c);
 }
 
 float schlickFresnel(vec3 V, vec3 N, float eta) {
