@@ -207,9 +207,9 @@ float traceVolume(vec3 pos, vec3 dir, float maxT) {
 	float absorption = 0.;
 	for(int i = 1; i <= VolumeSteps; i++) {
 		float newT = t+VolumeStepSize;
-        absorption += density(pos+newT*dir)*(newT-t);
-        t = newT;
-        if(absorption > bounceThreshold || t >= maxT) break;
+		absorption += density(pos+newT*dir)*(newT-t);
+		t = newT;
+		if(absorption > bounceThreshold || t >= maxT) break;
 	}
     return absorption > bounceThreshold && t < maxT ? t : -1.;
 }
@@ -224,9 +224,9 @@ float trace(vec3 pos, vec3 dir, float maxT);
 #else
 float trace(vec3 pos, vec3 dir, float maxT) {
 	vec2 sT = sphereIntersect(pos, dir, vec3(0.), SceneRadius);
-    float t0 = max(0., sT.x);
+	float t0 = max(0., sT.x);
 	maxT = combine(maxT, sT.y - t0);
-    pos += t0 * dir;
+	pos += t0 * dir;
 	
 	float t = -1.;
 	
