@@ -21,7 +21,7 @@ void planeFold(inout vec4 p, vec3 n) {
 
 float cylinderDE(vec4 p, float r, float h) {
 	vec2 s = vec2(length(p.xz), abs(p.y)) - vec2(r, h);
-	return length(max(s, vec2(0))) + min(max(s.x, s.y), 0.) / p.w;
+	return (length(max(s, vec2(0))) + min(max(s.x, s.y), 0.)) / p.w;
 }
 
 float boxDE(vec4 p, vec3 s) {
