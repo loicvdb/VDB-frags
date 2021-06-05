@@ -134,6 +134,79 @@ vec3 clearcoatGGXBRDF(vec3 V, vec3 L, float alpha, float ior, vec3 color) {
 	return mix(l, g, schlickFresnel(V, h, ior));
 }
 
+float fresnel(vec3 V, vec3 N, float ior) {
+	float cosi = dot(V, N);
+	float etat = ior;
+	if(cosi < 0.) { // TODO: check if necessary
+		etat = 1. / ior;
+		cosi = -cosi;
+	}
+	float sint = sqrt(max(0., 1. - cosi*cosi)) / etat;
+	if(sint >= 1.) return 1.;
+	float cost = sqrt(1. - sint * sint);
+	float Rs = (etat * cosi - cost) / (etat * cosi + cost);
+	float Rp = (cosi - etat * cost) / (cosi + etat * cost);
+	return (Rs*Rs + Rp*Rp)*.5; 
+}
+
+vec3 glassGGXImportanceSampling(vec3 V, float alpha, float ior) {
+	/*
+	vec3 h = sampleGGXVNDF(V, alpha);
+	float F = fresnel(-V, h, ior);
+	vec3 R = (RANDOM < F) ? reflect(-V, h) : refract(-V, h, ior); // TODO: check ior in refract
+	return R;
+	*/
+	vec3 R = lambertImportanceSampling(V);
+	if(RANDOM < .5) R = -R;
+	return R;
+}
+
+float glassGGXPDF(vec3 V, vec3 R, float alpha, float ior) {
+	/*
+	if(sign(V.z) * sign(R.z) < 0.) {
+		float ni = ior;
+		float no = 1.;
+		vec3 h = -normalize(ni * V + no * R);
+		vec3 F = fresnel(V, h, ior);
+		return GGXVNDF(V, h, alpha*alpha) * .5;
+	} else {
+	}
+	*/
+	
+	if(R.z < 0.) R = -R;
+	return lambertPDF(V, R) * .5;
+}
+
+vec3 glassGGXBRDF(vec3 V, vec3 L, float alpha, float ior) {
+	
+	if(V.z < 0.) {
+		V = -V;
+		L = -L;
+		ior = 1. / ior;
+	}
+	float a2 = alpha * alpha;
+	float G = GGXG1(V.z, a2) * GGXG1(abs(L.z), a2);
+	
+	vec3 h;
+	float F;
+	
+	if(sign(L.z) < 0.) {				// refraction
+		h = -normalize(V+ior*L);
+		if(h.z < 0. || dot(h, V) < 0.) return vec3(0); 	// h not facing the view vector or the surface normal
+	} else {							// reflection
+		h = normalize(V+L);
+	}
+	
+	float D = GGXNDF(h.z, a2);
+	F = fresnel(V, h, ior);
+	
+	if(sign(L.z) < 0.) {
+		F = 1. - F;
+	}
+	
+	return vec3(F * G * D / (4. * V.z * abs(L.z))) * 2.;
+}
+
 
 
 /****************************************************************

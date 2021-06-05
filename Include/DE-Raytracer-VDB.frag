@@ -294,6 +294,7 @@ vec3 baseColor(vec3 pos, vec3 n) {
  // we define the materials for the preprocessor
  #define clearcoat 1
  #define glossy 2
+ #define glass 3
 
 vec3 BRDFSample(vec3 V) {
 	#ifdef volumetric
@@ -308,7 +309,11 @@ vec3 BRDFSample(vec3 V) {
 		#if MATERIAL == glossy
 		return glossyGGXImportanceSampling(V, Roughness);
 		#else
+		#if MATERIAL == glass
+		return glassGGXImportanceSampling(V, Roughness, IoR);
+		#else
 		return lambertImportanceSampling(V);
+		#endif
 		#endif
 		#endif
 	}
@@ -327,7 +332,11 @@ float BRDFPDF(vec3 V, vec3 R) {
 		#if MATERIAL == glossy
 		return glossyGGXPDF(V, R, Roughness);
 		#else
+		#if MATERIAL == glass
+		return glassGGXPDF(V, R, Roughness, IoR);
+		#else
 		return lambertPDF(V, R);
+		#endif
 		#endif
 		#endif
 	}
@@ -348,7 +357,11 @@ vec3 BRDF(vec3 V, vec3 L, vec3 pos) {
 		#if MATERIAL == glossy
 		return glossyGGXBRDF(V, L, Roughness, color);
 		#else
+		#if MATERIAL == glass
+		return glassGGXBRDF(V, L, Roughness, IoR);
+		#else
 		return lambertBRDF(V, L, color);
+		#endif
 		#endif
 		#endif
 	}
