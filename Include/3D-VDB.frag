@@ -46,9 +46,6 @@ varying vec2 viewCoord;
 varying vec2 texCoord;
 varying vec2 pixelScale;
 
-// lens settings
-const float lensFocalDist = 10.;	// useless for now, can be set to anything
-
 #ifdef providesInit
 void init();
 #else
@@ -72,10 +69,10 @@ vec2 sampleAperture() {
 	return cos(angle)*tri + sin(angle)*vec2(tri.y, -tri.x);
 }
 
-void thinLensRefract(inout vec3 pos, inout vec3 dir) {
+void thinLensRefract(inout vec3 pos, inout vec3 dir, float focalDist) {
 	vec3 fDir = dir/dir.z;
 	pos -= pos.z * fDir;
-    dir = normalize(fDir * lensFocalDist-pos);
+    dir = normalize(fDir * focalDist-pos);
 }
 
 void main() {
@@ -91,17 +88,19 @@ void main() {
 	}
 	
 	float sqAp = sqrt(ApertureRatio);
-	vec2 apertureDim = Aperture * vec2(1./sqAp, sqAp);
+	vec2 apertureDim = vec2(1./sqAp, sqAp);
+	apertureDim *= Aperture / max(apertureDim.x, apertureDim.y);
 	
-	float sensorDist = 1. / (1./lensFocalDist - 1./FocalPlane);
+	float sensorDist = 1;
 	float sensorSize = sensorDist * FOV;
+	float lensFocalDist = 1./(1./sensorDist + 1./FocalPlane);
 	
 	vec3 c = vec3(0.);
 	for(int i = 0; i < SamplesPerFrame; i++) {
 		vec2 jitteredCoord = viewCoord + pixelScale*(vec2(RANDOM, RANDOM)-.5);
 		vec3 rayPos = vec3(apertureDim * sampleAperture(), 0);
 		vec3 rayDir = normalize(rayPos + vec3(jitteredCoord * sensorSize, sensorDist));
-		thinLensRefract(rayPos, rayDir);
+		thinLensRefract(rayPos, rayDir, lensFocalDist);
 		c += color(Eye + rayPos*cam2world, rayDir*cam2world);
 	}
 	c /= float(SamplesPerFrame);
