@@ -54,7 +54,7 @@ vec3 sampleGGXVNDF(vec3 V_, float alpha) {
 	vec3 V = normalize(vec3(alpha * V_.xy, V_.z));
 	
 	// orthonormal basis
-	vec3 T1 = ORTHO(V);
+	vec3 T1 = (V.z < 0.9999) ? normalize(cross(V, vec3(0,0,1))) : vec3(1,0,0);
 	vec3 T2 = cross(T1, V);
 	
 	// sample point with polar coordinates (r, phi)
