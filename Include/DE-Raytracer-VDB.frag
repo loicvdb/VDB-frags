@@ -202,10 +202,10 @@ float traceVolume(vec3 pos, vec3 dir, float maxT) {
 	
 	if(!EnableVolumetrics) return -1.;
 	
-	float t = RANDOM*VolumeStepSize;
+	float t = (VolumeStepRandomising ? RANDOM : 1.)*VolumeStepSize;
 	float bounceThreshold = -log(1.-RANDOM)/VolumeDensity;
 	float absorption = 0.;
-	for(int i = 1; i <= VolumeSteps; i++) {
+	for(int i = 0; i < VolumeSteps; i++) {
 		float newT = t+VolumeStepSize;
 		absorption += density(pos+newT*dir)*(newT-t);
 		t = newT;
