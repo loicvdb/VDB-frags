@@ -89,7 +89,9 @@ vec3 glossyGGXBRDF(vec3 V, vec3 L, float alpha, vec3 color) {
 	float a2 = alpha * alpha;
 	float G = GGXG1(V.z, a2) * GGXG1(L.z, a2);
 	float D = GGXNDF(normalize(V+L).z, a2);
-	return color * G * D / (4. * V.z * L.z);
+	// fake multiscattering correction from https://c0de517e.blogspot.com/2019/08/misunderstanding-multiscattering.html
+	float correction = 1. + 2.*alpha*alpha * V.z;
+	return color * G * D / (4. * V.z * L.z) * correction;
 }
 
 float schlickFresnel(float cosTheta, float r0) {
@@ -129,7 +131,9 @@ vec3 clearcoatGGXBRDF(vec3 V, vec3 L, float alpha, float ior, vec3 color) {
 	vec3 h = normalize(V+L);
 	float G = GGXG1(V.z, a2) * GGXG1(L.z, a2);
 	float D = GGXNDF(h.z, a2);
-	vec3 g = vec3(G * D / (4. * V.z * L.z));
+	// fake multiscattering correction from https://c0de517e.blogspot.com/2019/08/misunderstanding-multiscattering.html
+	float correction = 1. + 2.*alpha*alpha * V.z;
+	vec3 g = vec3(G * D / (4. * V.z * L.z) * correction);
 	vec3 l = color * INV_PI;
 	return mix(l, g, schlickFresnel(V, h, ior));
 }
