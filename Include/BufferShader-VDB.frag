@@ -39,6 +39,9 @@ void main() {
 	// Back to linear
 	c = c * acescg2linear;
 	
+	// Clamping the negatives (again)
+	c = max(c, vec3(0.));
+	
 	// Gamma
 	c = pow(c, vec3(1.0/Gamma));
 	

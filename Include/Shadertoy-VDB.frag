@@ -84,7 +84,7 @@ uniform samplerCube iChannel3; file[cubemap.png]
 
 #group Post
 uniform float Exposure; slider[0.0,1.0,30.0]
-uniform float Gamma; slider[0.0,1.0,5.0];
+uniform float Gamma; slider[0.0,2.2,5.0];
 uniform bool Tonemapping; checkbox[true];
 uniform bool DivideByAlpha; checkbox[true]
 
