@@ -36,6 +36,8 @@ uniform float Aperture; slider[0,0.0,1.]
 uniform float ApertureRatio; slider[.2,2.,5.]
 uniform int Blades; slider[0,6,12]
 uniform float BladeRotation; slider[0,0,1]
+uniform float BloomStrength; slider[0.0,0.0,1.0]
+uniform float BloomRadius; slider[0.0,.2,1.0]
 #group Post
 uniform float Gamma; slider[0.0,2.2,5.0]
 uniform float Exposure; slider[0.0,1.0,3.0]
@@ -98,6 +100,11 @@ void main() {
 	vec3 c = vec3(0.);
 	for(int i = 0; i < SamplesPerFrame; i++) {
 		vec2 jitteredCoord = viewCoord + pixelScale*(vec2(RANDOM, RANDOM)-.5);
+		if(RANDOM < BloomStrength) {
+			// normal distribution of the bloom, following https://en.wikipedia.org/wiki/Box%E2%80%93Muller_transform
+			float a = RANDOM * TWO_PI;
+			jitteredCoord += BloomRadius * vec2(cos(a), sin(a)) * sqrt(-2. * log(RANDOM)) * cos(TWO_PI * RANDOM);
+		}
 		vec3 rayPos = vec3(apertureDim * sampleAperture(), 0);
 		vec3 rayDir = normalize(rayPos + vec3(jitteredCoord * sensorSize, sensorDist));
 		thinLensRefract(rayPos, rayDir, lensFocalDist);
