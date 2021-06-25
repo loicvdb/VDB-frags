@@ -19,8 +19,10 @@ void planeFold(inout vec4 p, vec3 n) {
 	p.xyz = p.xyz - 2.*n*min(dot(p.xyz, n), 0.);
 }
 
-float cylinderDE(vec4 p, float r, float h) {
-	vec2 s = vec2(length(p.xz), abs(p.y)) - vec2(r, h);
+float cylinderDE(vec4 p, vec3 axis, float r, float h) {
+	float hm = abs(dot(p.xyz, normalize(axis)));
+	float rm = sqrt(dot(p.xyz, p.xyz) - hm*hm);
+	vec2 s = vec2(rm, hm) - vec2(r, h);
 	return (length(max(s, vec2(0))) + min(max(s.x, s.y), 0.)) / p.w;
 }
 
