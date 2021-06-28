@@ -294,6 +294,7 @@ vec3 baseColor(vec3 pos, vec3 n) {
  // we define the materials for the preprocessor
  #define clearcoat 1
  #define glossy 2
+ #define translucent 3
 
 vec3 BRDFSample(vec3 V) {
 	#ifdef volumetric
@@ -304,13 +305,14 @@ vec3 BRDFSample(vec3 V) {
 	{
 		#if MATERIAL == clearcoat
 		return clearcoatGGXImportanceSampling(V, Roughness, IoR);
-		#else
+		#endif
 		#if MATERIAL == glossy
 		return glossyGGXImportanceSampling(V, Roughness);
-		#else
+		#endif
+		#if MATERIAL == translucent
+		return translucentImportanceSampling(V);
+		#endif
 		return lambertImportanceSampling(V);
-		#endif
-		#endif
 	}
 }
 
@@ -323,13 +325,14 @@ float BRDFPDF(vec3 V, vec3 R) {
 	{
 		#if MATERIAL == clearcoat
 		return clearcoatGGXPDF(V, R, Roughness, IoR);
-		#else
+		#endif
 		#if MATERIAL == glossy
 		return glossyGGXPDF(V, R, Roughness);
-		#else
+		#endif
+		#if MATERIAL == translucent
+		return translucentPDF(V, R);
+		#endif
 		return lambertPDF(V, R);
-		#endif
-		#endif
 	}
 }
 
@@ -344,13 +347,14 @@ vec3 BRDF(vec3 V, vec3 L, vec3 pos) {
 		vec3 color = clamp(baseColor(pos, nTrace), vec3(0.), vec3(1.)) * linear2acescg;
 		#if MATERIAL == clearcoat
 		return clearcoatGGXBRDF(V, L, Roughness, IoR, color);
-		#else
+		#endif
 		#if MATERIAL == glossy
 		return glossyGGXBRDF(V, L, Roughness, color);
-		#else
+		#endif
+		#if MATERIAL == translucent
+		return translucentBRDF(V, L, color);
+		#endif
 		return lambertBRDF(V, L, color);
-		#endif
-		#endif
 	}
 }
 
