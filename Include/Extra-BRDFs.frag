@@ -11,12 +11,12 @@
 
 vec3 lambertImportanceSampling(vec3 V) {
 	float a = RANDOM * TWO_PI;
-	float r = sqrt(RANDOM);
+	float r = sqrt(RANDOM) * sign(V.z);
 	return vec3(sqrt(1. - r * r) * vec2(cos(a), sin(a)), r);
 }
 
 float lambertPDF(vec3 V, vec3 R) {
-	return max(R.z, 0.) * INV_PI;
+	return max(sign(V.z) * R.z, 0.) * INV_PI;
 }
 
 vec3 lambertBRDF(vec3 V, vec3 L, vec3 color) {
