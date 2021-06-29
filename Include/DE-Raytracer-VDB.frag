@@ -66,6 +66,7 @@ uniform float IoR; slider[1,1.5,2.5]
 uniform float VolumeDensity; slider[0,1.,100.]
 uniform vec3 VolumeColor; color[1,1,1]
 uniform vec4 VolumeEmission; color[0.,0.,10.,1,1,1]
+uniform vec4 VolumeExtinction; color[0.,0.,100.,1,1,1]
 uniform float VolumeAnisotropy; slider[-.99,0,.99]
 #endif
 
@@ -92,6 +93,7 @@ vec4 LinearR = vec4(srgb2linear(R.rgb), R.w);
 #ifdef volumetric
 vec3 LinearVolumeColor = srgb2linear(VolumeColor);
 vec4 LinearVolumeEmission = vec4(srgb2linear(VolumeEmission.rgb), VolumeEmission.w);
+vec4 LinearVolumeExtinction = vec4(srgb2linear(VolumeExtinction.rgb), VolumeExtinction.w);
 #endif
 
 
@@ -198,20 +200,22 @@ float sdfTrace(vec3 pos, vec3 dir, float maxT) {
 #endif
 
 #ifdef volumetric
-float traceVolume(vec3 pos, vec3 dir, float maxT) {
+float traceVolume(vec3 pos, vec3 dir, float maxT, inout vec3 att) {
 	
 	if(!EnableVolumetrics) return -1.;
 	
 	float t = (VolumeStepRandomising ? RANDOM : 1.)*VolumeStepSize;
 	float bounceThreshold = -log(1.-RANDOM)/VolumeDensity;
-	float absorption = 0.;
-	for(int i = 0; i < VolumeSteps; i++) {
-		float newT = t+VolumeStepSize;
-		absorption += density(pos+newT*dir)*(newT-t);
-		t = newT;
-		if(absorption > bounceThreshold || t >= maxT) break;
+	float scattering = 0.;
+	vec3 extinction = vec3(0);
+	for(int i = 0; i < VolumeSteps && scattering < bounceThreshold && t < maxT; i++) {
+		float d = density(pos + t*dir) * VolumeStepSize;
+		scattering += d;
+		extinction += d * LinearVolumeExtinction.rgb * LinearVolumeExtinction.w;
+		t += VolumeStepSize;
 	}
-    return absorption > bounceThreshold && t < maxT ? t : -1.;
+	att *= exp(-extinction*linear2acescg);
+    return scattering > bounceThreshold && t < maxT ? t : -1.;
 }
 #endif
 
@@ -220,9 +224,9 @@ float combine(float t1, float t2) {
 }
 
 #ifdef providesTrace
-float trace(vec3 pos, vec3 dir, float maxT);
+float trace(vec3 pos, vec3 dir, float maxT, inout vec3 att);
 #else
-float trace(vec3 pos, vec3 dir, float maxT) {
+float trace(vec3 pos, vec3 dir, float maxT, inout vec3 att) {
 	vec2 sT = sphereIntersect(pos, dir, vec3(0.), SceneRadius);
 	float t0 = max(0., sT.x);
 	maxT = combine(maxT, sT.y - t0);
@@ -236,7 +240,9 @@ float trace(vec3 pos, vec3 dir, float maxT) {
 	#endif
 	
 	#ifdef volumetric
-	float tVol = traceVolume(pos, dir, maxT);
+	// using the attenuation like that is fine because we do the volume last, if we had
+	// multiple transparent material we'd have to find the closest intersection first
+	float tVol = traceVolume(pos, dir, maxT, att);
 	t = combine(tVol, t);
 	maxT = combine(maxT, t);
 	hitVolume = tVol >= 0. && t == tVol;
@@ -373,7 +379,7 @@ vec3 color(vec3 pos, vec3 dir) {
 	vec3 att = vec3(1.), outCol = vec3(0.), lightColor;
 	
 	for(int i = 0; i <= Bounces; i++) {
-		float t = trace(pos, dir, -1.);
+		float t = trace(pos, dir, -1., att);
 		if(hitLight(pos, dir, t, lightColor)) {
 			outCol += att * (lightColor * linear2acescg);
 			break;
@@ -447,11 +453,12 @@ vec3 color(vec3 pos, vec3 dir) {
 				lReflectance *= abs(lX.z);
 			}
 			if(i != Bounces) {
-				float lt = trace(lPos, lX * brdf2World, lightDist);
+				vec3 lAtt = att;
+				float lt = trace(lPos, lX * brdf2World, lightDist, lAtt);
 				vec3 directLight;
 				bool hit = hitLight(lPos, lX * brdf2World, lt, directLight);
 				directLight = (directLight * float(hit)) * linear2acescg;
-				outCol += att * directLight * lReflectance;
+				outCol += lAtt * directLight * lReflectance;
 			}
 			att *= rReflectance;
 			R = rX;
