@@ -86,7 +86,7 @@ void main() {
 		vec3 d = normalize(Target-Eye);
 		vec3 r = normalize(cross(d, Up));
 		vec3 u = cross(r, d);
-		cam2world = inverse(mat3(r, u, d));
+		cam2world = mat3(r, u, d);
 	}
 	
 	float sqAp = sqrt(ApertureRatio);
@@ -108,7 +108,7 @@ void main() {
 		vec3 rayPos = vec3(apertureDim * sampleAperture(), 0);
 		vec3 rayDir = normalize(rayPos + vec3(jitteredCoord * sensorSize, sensorDist));
 		thinLensRefract(rayPos, rayDir, lensFocalDist);
-		c += color(Eye + rayPos*cam2world, rayDir*cam2world);
+		c += color(Eye + cam2world * rayPos, cam2world * rayDir);
 	}
 	c /= float(SamplesPerFrame);
 
