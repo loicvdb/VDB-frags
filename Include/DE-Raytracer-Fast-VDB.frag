@@ -110,10 +110,10 @@ vec3 lightSample(vec3 pos, out float dist) {
 	dist = -1.;
 	vec3 t = ORTHO(LightDirection);
 	vec3 b = cross(t, LightDirection);
-	mat3 light2Word = inverse(mat3(t, b, LightDirection));
+	mat3 light2Word = mat3(t, b, LightDirection);
 	float a = RANDOM * TWO_PI;
 	float r =  1. - (1.-cos(LightRadius)) * RANDOM;
-	return vec3(sqrt(1. - r*r) * vec2(cos(a), sin(a)), r) * light2Word;
+	return light2Word * vec3(sqrt(1. - r*r) * vec2(cos(a), sin(a)), r);
 }
 
 float lightPDF(vec3 V) {
@@ -289,7 +289,7 @@ float BRDFPDF(vec3 V, vec3 R) {
 }
 
 vec3 BRDF(vec3 V, vec3 L, vec3 pos) {
-	vec3 color = clamp(baseColor(pos, nTrace), vec3(0.), vec3(1.)) * linear2acescg;
+	vec3 color = linear2acescg * clamp(baseColor(pos, nTrace), vec3(0.), vec3(1.));
 	#if MATERIAL == clearcoat
 	return clearcoatGGXBRDF(V, L, Roughness, IoR, color);
 	#else
@@ -327,7 +327,7 @@ vec3 directLight(vec3 pos, out vec3 lDir) {
 		t += VolumeStepSize;
 	}
 	#endif
-	return att * (directLight * linear2acescg) / lightPDF(lDir);
+	return att * (linear2acescg * directLight) / lightPDF(lDir);
 }
 
 #ifdef volumetric
@@ -339,10 +339,9 @@ vec3 integrateVolume(vec3 pos, vec3 dir, float t, out vec3 att) {
 	t = start + RANDOM * VolumeStepSize;
 	
 	vec3 b = ORTHO(dir);
-	mat3 world2Brdf = mat3(cross(b, dir), b, dir);
-	mat3 brdf2World = inverse(world2Brdf);
+	mat3 world2Brdf = inverse(mat3(cross(b, dir), b, dir));
 	
-	vec3 color = LinearVolumeColor * linear2acescg;
+	vec3 color = linear2acescg * LinearVolumeColor;
 	
 	att = vec3(1);
 	vec3 outCol = vec3(0);
@@ -351,7 +350,7 @@ vec3 integrateVolume(vec3 pos, vec3 dir, float t, out vec3 att) {
 		if((i+subframe)%VolumeSkipShadow == 0) {
 			vec3 lDir;
 			vec3 dl = directLight(pos + t*dir, lDir) * float(VolumeSkipShadow);
-			outCol += att * (1. - a) * dl * henyeyGreensteinBRDF(lDir * world2Brdf, color, VolumeAnisotropy);
+			outCol += att * (1. - a) * dl * henyeyGreensteinBRDF(world2Brdf * lDir, color, VolumeAnisotropy);
 		}
 		att *= a;
 		t += VolumeStepSize;
@@ -387,18 +386,18 @@ vec3 color(vec3 pos, vec3 dir) {
 	
 	vec3 lightColor;
 	if(hitLight(pos, dir, t, lightColor)) {
-		outCol += att * lightColor * linear2acescg;
+		outCol += att * (linear2acescg * lightColor);
 	} else if(t < 0.) {
-		outCol += att * background(dir) * linear2acescg;
+		outCol += att * (linear2acescg * background(dir));
 	} else {
 		
 		pos += t*dir;
 		
 		vec3 b = ORTHO(z);
-		mat3 world2Brdf = mat3(cross(b, z), b, z);
-		mat3 brdf2World = inverse(world2Brdf);
+		mat3 brdf2World = mat3(cross(b, z), b, z);
+		mat3 world2Brdf = inverse(brdf2World);
 		
-		vec3 V = -dir * world2Brdf;
+		vec3 V = world2Brdf * -dir;
 		
 		vec3 R = BRDFSample(V);
 		vec3 aoR = BRDF(V, R, pos) / BRDFPDF(V, R) * abs(R.z);
@@ -407,7 +406,7 @@ vec3 color(vec3 pos, vec3 dir) {
 		
 		vec3 lDir;
 		vec3 dl = directLight(oPos, lDir);
-		vec3 L = lDir * world2Brdf;
+		vec3 L = world2Brdf * lDir;
 		outCol += att * dl * abs(L.z) * BRDF(V, L, pos);
 		
 		float ao = 1.;
@@ -423,9 +422,9 @@ vec3 color(vec3 pos, vec3 dir) {
 			vec2 k = vec2(max(dist, 1e-6), 0);
 			z = normalize(vec3(DE(oPos+k.xyy)-dist, DE(oPos+k.yxy)-dist, DE(oPos+k.yyx)-dist));
 		}
-		outCol += att * (background(R * brdf2World) * linear2acescg) * aoR * pow(ao, AOStrength);
+		outCol += att * (linear2acescg * background(brdf2World * R)) * aoR * pow(ao, AOStrength);
 	}
 	
 	if(outCol != outCol) return vec3(0.);
-	return outCol * acescg2linear;  // we return sRGB for compatility with other buffer shaders / 3D cameras*/
+	return acescg2linear * outCol;  // we return sRGB for compatility with other buffer shaders / 3D cameras*/
 }

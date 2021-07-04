@@ -112,10 +112,10 @@ vec3 lightSample(vec3 pos, out float dist) {
 	dist = -1.;
 	vec3 t = ORTHO(LightDirection);
 	vec3 b = cross(t, LightDirection);
-	mat3 light2Word = inverse(mat3(t, b, LightDirection));
+	mat3 light2Word = mat3(t, b, LightDirection);
 	float a = RANDOM * TWO_PI;
 	float r =  1. - (1.-cos(LightRadius)) * RANDOM;
-	return vec3(sqrt(1. - r*r) * vec2(cos(a), sin(a)), r) * light2Word;
+	return light2Word * vec3(sqrt(1. - r*r) * vec2(cos(a), sin(a)), r);
 }
 
 float lightPDF(vec3 V) {
@@ -214,7 +214,7 @@ float traceVolume(vec3 pos, vec3 dir, float maxT, inout vec3 att) {
 		extinction += d * LinearVolumeExtinction.rgb * LinearVolumeExtinction.w;
 		t += VolumeStepSize;
 	}
-	att *= exp(-extinction*linear2acescg);
+	att *= exp(linear2acescg * -extinction);
     return scattering > bounceThreshold && t < maxT ? t : -1.;
 }
 #endif
@@ -345,12 +345,12 @@ float BRDFPDF(vec3 V, vec3 R) {
 vec3 BRDF(vec3 V, vec3 L, vec3 pos) {
 	#ifdef volumetric
 	if(hitVolume) {
-		vec3 color = LinearVolumeColor * linear2acescg;
+		vec3 color = linear2acescg * LinearVolumeColor;
 		return henyeyGreensteinBRDF(L, color, VolumeAnisotropy);
 	} else
 	#endif
 	{
-		vec3 color = clamp(baseColor(pos, nTrace), vec3(0.), vec3(1.)) * linear2acescg;
+		vec3 color = linear2acescg * clamp(baseColor(pos, nTrace), vec3(0.), vec3(1.));
 		#if MATERIAL == clearcoat
 		return clearcoatGGXBRDF(V, L, Roughness, IoR, color);
 		#endif
@@ -381,11 +381,11 @@ vec3 color(vec3 pos, vec3 dir) {
 	for(int i = 0; i <= Bounces; i++) {
 		float t = trace(pos, dir, -1., att);
 		if(hitLight(pos, dir, t, lightColor)) {
-			outCol += att * (lightColor * linear2acescg);
+			outCol += att * (linear2acescg * lightColor);
 			break;
 		}
 		if(t < 0.) {
-			outCol += att * (background(dir) * linear2acescg);
+			outCol += att * (linear2acescg * background(dir));
 			break;
 		}
 		
@@ -403,19 +403,19 @@ vec3 color(vec3 pos, vec3 dir) {
 		vec3 z = nTrace;
 		#endif
 		vec3 b = ORTHO(z);
-		mat3 world2Brdf = mat3(cross(b, z), b, z);
-		mat3 brdf2World = inverse(world2Brdf);
+		mat3 brdf2World = mat3(cross(b, z), b, z);
+		mat3 world2Brdf = inverse(brdf2World);
 		
-		vec3 V = -dir * world2Brdf;
+		vec3 V = world2Brdf * -dir;
 		
 		vec3 rX = BRDFSample(V);
 		float pdf11 = BRDFPDF(V, rX);
-		float pdf12 = lightPDF(rX * brdf2World);
+		float pdf12 = lightPDF(brdf2World * rX);
 		
 		float lightDist;
-		vec3 lX = lightSample(pos, lightDist) * world2Brdf;
+		vec3 lX = world2Brdf * lightSample(pos, lightDist);
 		float pdf21 = BRDFPDF(V, lX);
-		float pdf22 = lightPDF(lX * brdf2World);
+		float pdf22 = lightPDF(brdf2World * lX);
 		
 		vec3 R;
 		if(OneSampleMIS) {
@@ -454,19 +454,19 @@ vec3 color(vec3 pos, vec3 dir) {
 			}
 			if(i != Bounces) {
 				vec3 lAtt = att;
-				float lt = trace(lPos, lX * brdf2World, lightDist, lAtt);
+				float lt = trace(lPos, brdf2World * lX, lightDist, lAtt);
 				vec3 directLight;
-				bool hit = hitLight(lPos, lX * brdf2World, lt, directLight);
-				directLight = (directLight * float(hit)) * linear2acescg;
+				bool hit = hitLight(lPos, brdf2World * lX, lt, directLight);
+				directLight = float(hit) * (linear2acescg * directLight);
 				outCol += lAtt * directLight * lReflectance;
 			}
 			att *= rReflectance;
 			R = rX;
 		}
 			
-		dir = R * brdf2World;
+		dir = brdf2World * R;
 		if(dot(att, vec3(1)) <= 0.) break;
 	}
 	if(outCol != outCol) return vec3(0.);
-	return outCol * acescg2linear;		// we return sRGB for compatility with other buffer shaders / 3D cameras
+	return acescg2linear * outCol;		// we return sRGB for compatility with other buffer shaders / 3D cameras
 }

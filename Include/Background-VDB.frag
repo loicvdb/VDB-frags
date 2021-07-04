@@ -31,10 +31,10 @@ vec3 lightSample(vec3 pos, out float dist) {
 	dist = -1.;
 	vec3 t = ORTHO(LightDirection);
 	vec3 b = cross(t, LightDirection);
-	mat3 light2Word = inverse(mat3(t, b, LightDirection));
+	mat3 light2Word = mat3(t, b, LightDirection);
 	float a = RANDOM * TWO_PI;
 	float r =  1. - (1.-cos(LightRadius)) * RANDOM;
-	return vec3(sqrt(1. - r*r) * vec2(cos(a), sin(a)), r) * light2Word;
+	return light2Word * vec3(sqrt(1. - r*r) * vec2(cos(a), sin(a)), r);
 }
 
 float lightPDF(vec3 V) {

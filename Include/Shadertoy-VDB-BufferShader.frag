@@ -32,7 +32,7 @@ void main() {
 	
 	if(Tonemapping) {
 		// To ACEScg (we assume the frontbuffer is sRGB for compatilibity with other frags)
-		c = c * linear2acescg;
+		c = linear2acescg * c;
 		
 		// Clamping the negatives
 		c = max(c, vec3(0.));
@@ -41,7 +41,7 @@ void main() {
 		c = RRTAndODTFit(c);
 		
 		// Back to linear
-		c = c * acescg2linear;
+		c = acescg2linear * c;
 	}
 	
 	// Clamping the negatives (again)
