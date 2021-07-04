@@ -20,6 +20,7 @@ vec3 linear2srgb(vec3 c) {
 
 // fit from https://github.com/TheRealMJP/BakingLab/blob/master/BakingLab/ACES.hlsl
 vec3 RRTAndODTFit(vec3 v){
+	v = max(v, vec3(0));
 	vec3 a = v * (v + 0.0245786f) - 0.000090537f;
 	vec3 b = v * (0.983729f * v + 0.4329510f) + 0.238081f;
 	return a / b;

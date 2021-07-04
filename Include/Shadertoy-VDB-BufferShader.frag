@@ -31,27 +31,17 @@ void main() {
 	c *= Exposure;
 	
 	if(Tonemapping) {
-		// To ACEScg (we assume the frontbuffer is sRGB for compatilibity with other frags)
-		c = linear2acescg * c;
-		
-		// Clamping the negatives
-		c = max(c, vec3(0.));
-		
-		// Tonemapping
-		c = RRTAndODTFit(c);
-		
-		// Back to linear
-		c = acescg2linear * c;
+		c = acescg2linear * RRTAndODTFit(linear2acescg * c);
 	}
 	
-	// Clamping the negatives (again)
-	c = max(c, vec3(0.));
+	// To sRGB
+	c = linear2srgb(c);
 	
 	// Gamma
-	c = pow(c, vec3(1.0/Gamma));
+	c = pow(c, vec3(2.2/Gamma));	// we are already in sRGB, so we remove the default 2.2 gamma
 	
 	// Dithering to avoid banding
-	c += 1./256. * vec3(RANDOM, RANDOM, RANDOM);
+	c += (vec3(RANDOM, RANDOM, RANDOM) - .5) / 255.;
 	
 	gl_FragColor = vec4(clamp(c, vec3(0.), vec3(1.)), 1.);
 }
