@@ -204,15 +204,15 @@ float traceVolume(vec3 pos, vec3 dir, float maxT, inout vec3 att) {
 	
 	if(!EnableVolumetrics) return -1.;
 	
-	float t = (VolumeStepRandomising ? RANDOM : 1.)*VolumeStepSize;
+	float t = -(VolumeStepRandomising ? RANDOM : .5)*VolumeStepSize;
 	float bounceThreshold = -log(1.-RANDOM)/VolumeDensity;
 	float scattering = 0.;
 	vec3 extinction = vec3(0);
 	for(int i = 0; i < VolumeSteps && scattering < bounceThreshold && t < maxT; i++) {
+		t += VolumeStepSize;
 		float d = density(pos + t*dir) * VolumeStepSize;
 		scattering += d;
 		extinction += d * LinearVolumeExtinction.rgb * LinearVolumeExtinction.w;
-		t += VolumeStepSize;
 	}
 	att *= exp(linear2acescg * -extinction);
     return scattering > bounceThreshold && t < maxT ? t : -1.;
