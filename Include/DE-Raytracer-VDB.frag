@@ -62,7 +62,7 @@ uniform float Cycles; slider[0.1,1.1,32.3]
 #group Material
 uniform float Roughness; slider[0.001,.1,1.]
 uniform bool Metallic; checkbox[false]
-uniform float IoR; slider[1,1.5,2.5]
+uniform float IoR; slider[1,1,2.5]
 #ifdef volumetric
 uniform float VolumeDensity; slider[0,1.,100.]
 uniform vec3 VolumeColor; color[1,1,1]
@@ -111,11 +111,11 @@ float lightPDF(vec3 V);
 #else
 vec3 lightSample(vec3 pos, out float dist) {
 	dist = -1.;
-	vec3 t = ORTHO(LightDirection);
+	vec3 t = ortho(LightDirection);
 	vec3 b = cross(t, LightDirection);
 	mat3 light2Word = mat3(t, b, LightDirection);
-	float a = RANDOM * TWO_PI;
-	float r =  1. - (1.-cos(LightRadius)) * RANDOM;
+	float a = random() * TWO_PI;
+	float r =  1. - (1.-cos(LightRadius)) * random();
 	return light2Word * vec3(sqrt(1. - r*r) * vec2(cos(a), sin(a)), r);
 }
 
@@ -205,8 +205,8 @@ float traceVolume(vec3 pos, vec3 dir, float maxT, inout vec3 att) {
 	
 	if(!EnableVolumetrics) return -1.;
 	
-	float t = -(VolumeStepRandomising ? RANDOM : .5)*VolumeStepSize;
-	float bounceThreshold = -log(1.-RANDOM)/VolumeDensity;
+	float t = -(VolumeStepRandomising ? random() : .5)*VolumeStepSize;
+	float bounceThreshold = -log(1.-random())/VolumeDensity;
 	float scattering = 0.;
 	vec3 extinction = vec3(0);
 	for(int i = 0; i < VolumeSteps && scattering < bounceThreshold && t < maxT; i++) {
@@ -298,14 +298,14 @@ vec3 baseColor(vec3 pos, vec3 n) {
  * BRDFs n stuff.
  ****************************************************************/
 
-vec3 BRDFSample(vec3 wo) {
+vec3 BRDFSample(vec3 wo, vec3 prng) {
 	#ifdef volumetric
 	if(hitVolume) {
-		return volumeBRDFSample();
+		return volumeBRDFSample(prng);
 	} else
 	#endif
 	{
-		return surfaceBRDFSample(wo);
+		return surfaceBRDFSample(wo, prng);
 	}
 }
 
@@ -380,7 +380,7 @@ vec3 color(vec3 pos, vec3 dir) {
 		#else
 		vec3 z = nTrace;
 		#endif
-		vec3 b = ORTHO(z);
+		vec3 b = ortho(z);
 		mat3 brdf2World = mat3(cross(b, z), b, z);
 		mat3 world2Brdf = inverse(brdf2World);
 		
@@ -398,7 +398,11 @@ vec3 color(vec3 pos, vec3 dir) {
 		
 		outCol += att * (linear2acescg * emission(V));
 		
-		vec3 rX = BRDFSample(V);
+		vec3 prng = vec3(prng(PRNG_BASE + i * PRNG_BOUNCE + PRNG_BRDF_U),
+						 prng(PRNG_BASE + i * PRNG_BOUNCE + PRNG_BRDF_V),
+						 prng(PRNG_BASE + i * PRNG_BOUNCE + PRNG_BRDF));
+		
+		vec3 rX = BRDFSample(V, prng);
 		float pdf11 = BRDFPDF(V, rX);
 		float pdf12 = lightPDF(brdf2World * rX);
 		
@@ -412,7 +416,7 @@ vec3 color(vec3 pos, vec3 dir) {
 			float weight1 = pdf11 / (pdf11 + pdf12);
 			float weight2 = pdf22 / (pdf21 + pdf22);
 			float totalWeight = weight1 + weight2;
-			if(RANDOM * totalWeight < weight1) {
+			if(random() * totalWeight < weight1) {
 				R = rX;
 				att *= totalWeight / pdf11;
 			} else {

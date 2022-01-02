@@ -22,30 +22,30 @@ float GGXNDF(float NoM, float a2) {
 	return INV_PI * a2 / (d*d);
 }
 
-float GGXVNDF(vec3 V, vec3 H, float a2) {
-	return GGXG1(V.z, a2) * GGXNDF(H.z, a2) / (2.0 * V.z);
+float GGXVNDF(vec3 wo, vec3 h, float a2) {
+	return GGXG1(wo.z, a2) * GGXNDF(h.z, a2) / (2.0 * wo.z);
 }
 
-vec3 sampleGGXVNDF(vec3 V_, float alpha) {
+vec3 sampleGGXVNDF(vec3 wo, float alpha, vec2 prng) {
 	
 	// stretch view
-	vec3 V = normalize(vec3(alpha * V_.xy, V_.z));
+	wo = normalize(vec3(alpha * wo.xy, wo.z));
 	
 	// orthonormal basis
-	vec3 T1 = (V.z < 0.9999) ? normalize(cross(V, vec3(0,0,1))) : vec3(1,0,0);
-	vec3 T2 = cross(T1, V);
+	vec3 T1 = (wo.z < 0.9999) ? normalize(cross(wo, vec3(0,0,1))) : vec3(1,0,0);
+	vec3 T2 = cross(T1, wo);
 	
 	// sample point with polar coordinates (r, phi)
-	float U1 = RANDOM;
-	float U2 = RANDOM;
-	float a = 1.0 / (1.0 + V.z);
+	float U1 = prng.x;
+	float U2 = prng.y;
+	float a = 1.0 / (1.0 + wo.z);
 	float r = sqrt(U1);
 	float phi = (U2<a) ? U2/a * PI : PI + (U2-a)/(1.0-a) * PI;
 	float P1 = r*cos(phi);
-	float P2 = r*sin(phi)*((U2<a) ? 1.0 : V.z);
+	float P2 = r*sin(phi)*((U2<a) ? 1.0 : wo.z);
 	
 	// compute normal
-	vec3 N = P1*T1 + P2*T2 + sqrt(max(0.0, 1.0 - P1*P1 - P2*P2))*V;
+	vec3 N = P1*T1 + P2*T2 + sqrt(max(0.0, 1.0 - P1*P1 - P2*P2))*wo;
 	
 	// unstretch
 	N = normalize(vec3(alpha*N.xy, max(0.0, N.z)));
@@ -53,8 +53,8 @@ vec3 sampleGGXVNDF(vec3 V_, float alpha) {
 	return N;
 }
 
-float fresnel(vec3 v, vec3 h, float ior) {
-  float cosi = dot(v, h);
+float fresnel(vec3 wo, vec3 h, float ior) {
+  float cosi = dot(wo, h);
   float etai = 1.0, etat = ior;
   if (cosi < 0.0) {
     float tmp = etai;
@@ -70,12 +70,12 @@ float fresnel(vec3 v, vec3 h, float ior) {
   return (sqrtRs * sqrtRs + sqrtRp * sqrtRp) * 0.5;
 }
 
-vec3 surfaceBRDFSample(vec3 wo) {
-	vec3 h = sampleGGXVNDF(wo, surface.roughness);
+vec3 surfaceBRDFSample(vec3 wo, vec3 prng) {
+	vec3 h = sampleGGXVNDF(wo, surface.roughness, prng.xy);
 	float f = surface.metallic ? 1.0 : fresnel(wo, h, surface.ior);
-	float a = RANDOM * TWO_PI;
-	float r = sqrt(RANDOM) * sign(wo.z);
-	vec3 R = (RANDOM < f) ? reflect(-wo, h) : vec3(sqrt(1. - r * r) * vec2(cos(a), sin(a)), r);
+	float a = prng.x * TWO_PI;
+	float r = sqrt(prng.y) * sign(wo.z);
+	vec3 R = (prng.z < f) ? reflect(-wo, h) : vec3(sqrt(1. - r * r) * vec2(cos(a), sin(a)), r);
 	return R;
 }
 
@@ -122,10 +122,10 @@ float henyeyGreensteinIntegral(float cosTheta, float a) {
  	return (1.0 - a * a) / (a * sqrt(1.0 + a * (a - 2.0 * cosTheta)));
 }
 
-vec3 volumeBRDFSample() {
-	float cosTheta = 1.0 + henyeyGreensteinIntegral(-1.0, volume.anisotropy) - henyeyGreensteinIntegral(RANDOM * 2.0 - 1.0, volume.anisotropy);
+vec3 volumeBRDFSample(vec3 prng) {
+	float cosTheta = 1.0 + henyeyGreensteinIntegral(-1.0, volume.anisotropy) - henyeyGreensteinIntegral(prng.x * 2.0 - 1.0, volume.anisotropy);
 	float r = sqrt(max(1.0 - cosTheta * cosTheta, 0.0));
-	float a = RANDOM * TWO_PI;
+	float a = prng.y * TWO_PI;
 	return vec3(r * cos(a), r * sin(a), cosTheta);
 }
 

@@ -10,8 +10,8 @@
  ****************************************************************/
 
 vec3 lambertImportanceSampling(vec3 V) {
-	float a = RANDOM * TWO_PI;
-	float r = sqrt(RANDOM) * sign(V.z);
+	float a = random() * TWO_PI;
+	float r = sqrt(random()) * sign(V.z);
 	return vec3(sqrt(1. - r * r) * vec2(cos(a), sin(a)), r);
 }
 
@@ -24,7 +24,7 @@ vec3 lambertBRDF(vec3 V, vec3 L, vec3 color) {
 }
 
 vec3 translucentImportanceSampling(vec3 V) {
-	return lambertImportanceSampling(V) * (RANDOM < .5 ? -1. : 1.);
+	return lambertImportanceSampling(V) * (random() < .5 ? -1. : 1.);
 }
 
 float translucentPDF(vec3 V, vec3 R) {
@@ -58,8 +58,8 @@ vec3 sampleGGXVNDF(vec3 V_, float alpha) {
 	vec3 T2 = cross(T1, V);
 	
 	// sample point with polar coordinates (r, phi)
-	float U1 = RANDOM;
-	float U2 = RANDOM;
+	float U1 = random();
+	float U2 = random();
 	float a = 1.0 / (1.0 + V.z);
 	float r = sqrt(U1);
 	float phi = (U2<a) ? U2/a * PI : PI + (U2-a)/(1.0-a) * PI;
@@ -114,7 +114,7 @@ float schlickFresnel(vec3 V, vec3 N, float eta) {
 vec3 clearcoatGGXImportanceSampling(vec3 V, float alpha, float ior) {
 	vec3 h = sampleGGXVNDF(V, alpha);
 	float F = schlickFresnel(V, h, ior);
-	vec3 R = (RANDOM < F) ? reflect(-V, h) : lambertImportanceSampling(V);
+	vec3 R = (random() < F) ? reflect(-V, h) : lambertImportanceSampling(V);
 	return R;
 }
 
@@ -151,9 +151,9 @@ float henyeyGreensteinIntegral(float cosTheta, float anisotropy){
 }
 
 vec3 henyeyGreensteinImportanceSampling(float anisotropy) {
-	float cosTheta = 1. + henyeyGreensteinIntegral(-1., anisotropy) - henyeyGreensteinIntegral(RANDOM*2.-1., anisotropy);
+	float cosTheta = 1. + henyeyGreensteinIntegral(-1., anisotropy) - henyeyGreensteinIntegral(random()*2.-1., anisotropy);
 	float r = sqrt(max(1.-cosTheta*cosTheta, 0.));
-	float a = RANDOM * TWO_PI;
+	float a = random() * TWO_PI;
 	return vec3(r*cos(a), r*sin(a), cosTheta);
 }
 
@@ -166,9 +166,9 @@ vec3 henyeyGreensteinBRDF(vec3 L, vec3 color, float anisotropy) {
 }
 
 vec3 isotropicImportanceSampling() {
-	float cosTheta = RANDOM * 2. - 1.;
+	float cosTheta = random() * 2. - 1.;
 	float r = sqrt(max(1.-cosTheta*cosTheta, 0.));
-	float a = RANDOM * TWO_PI;
+	float a = random() * TWO_PI;
 	return vec3(r*cos(a), r*sin(a), cosTheta);
 }
 

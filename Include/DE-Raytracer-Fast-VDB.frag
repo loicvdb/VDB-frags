@@ -108,11 +108,11 @@ float lightPDF(vec3 V);
 #else
 vec3 lightSample(vec3 pos, out float dist) {
 	dist = -1.;
-	vec3 t = ORTHO(LightDirection);
+	vec3 t = ortho(LightDirection);
 	vec3 b = cross(t, LightDirection);
 	mat3 light2Word = mat3(t, b, LightDirection);
-	float a = RANDOM * TWO_PI;
-	float r =  1. - (1.-cos(LightRadius)) * RANDOM;
+	float a = random() * TWO_PI;
+	float r =  1. - (1.-cos(LightRadius)) * random();
 	return light2Word * vec3(sqrt(1. - r*r) * vec2(cos(a), sin(a)), r);
 }
 
@@ -321,7 +321,7 @@ vec3 directLight(vec3 pos, out vec3 lDir) {
 	#ifdef volumetric
 	vec2 sT = sphereIntersect(pos, lDir, vec3(0.), SceneRadius);
 	float end = sT.y;
-	float t = RANDOM * VolumeStepSize;
+	float t = random() * VolumeStepSize;
 	for(int i = 0; i < VolumeShadowSteps && t < end; i++) {
 		att *= exp(-VolumeStepSize * VolumeDensity * density(pos + t*lDir));
 		t += VolumeStepSize;
@@ -336,9 +336,9 @@ vec3 integrateVolume(vec3 pos, vec3 dir, float t, out vec3 att) {
 	vec2 sT = sphereIntersect(pos, dir, vec3(0.), SceneRadius);
 	float start = max(0., sT.x);
 	float end = combine(t, sT.y);
-	t = start + RANDOM * VolumeStepSize;
+	t = start + random() * VolumeStepSize;
 	
-	vec3 b = ORTHO(dir);
+	vec3 b = ortho(dir);
 	mat3 world2Brdf = inverse(mat3(cross(b, dir), b, dir));
 	
 	vec3 color = linear2acescg * LinearVolumeColor;
@@ -393,7 +393,7 @@ vec3 color(vec3 pos, vec3 dir) {
 		
 		pos += t*dir;
 		
-		vec3 b = ORTHO(z);
+		vec3 b = ortho(z);
 		mat3 brdf2World = mat3(cross(b, z), b, z);
 		mat3 world2Brdf = inverse(brdf2World);
 		
@@ -413,7 +413,7 @@ vec3 color(vec3 pos, vec3 dir) {
 		float dist = DE(oPos);
 		for(int i = 0; i < AOSteps && dot(oPos, oPos) < SceneRadius*SceneRadius; i++) {
 			for(int j = 0; j < AOStepsMultiplier; j++) {
-				float stepSize = RANDOM;
+				float stepSize = random();
 				oPos += z * dist * stepSize;
 				float expected = dist * (1. + stepSize);
 				dist = DE(oPos);

@@ -59,15 +59,17 @@ vec3 color(vec3 pos, vec3 direction);
 
 // n-blade aperture
 vec2 sampleAperture() {
+	float u = prng(PRNG_DOF_U);
+	float v = prng(PRNG_DOF_V);
 	if(Blades < 3) { // circular aperture
-		float a = RANDOM * TWO_PI;
-		return sqrt(RANDOM) * vec2(cos(a), sin(a));
+		float a = u * TWO_PI;
+		return sqrt(v) * vec2(cos(a), sin(a));
 	}
 	float side = sin(PI / float(Blades));
-	vec2 tri = vec2(RANDOM, RANDOM);
+	vec2 tri = vec2(fract(u * float(Blades)), v);
 	if(tri.x-tri.y > 0.0) tri = vec2(tri.x-1.0, 1.0-tri.y);
 	tri *= vec2(side, -sqrt(1.0-side*side));
-	float angle = 2.*PI*(BladeRotation + floor(RANDOM * float(Blades))/float(Blades));
+	float angle = 2.*PI*(BladeRotation + floor(u * float(Blades))/float(Blades));
 	return cos(angle)*tri + sin(angle)*vec2(tri.y, -tri.x);
 }
 
@@ -99,11 +101,14 @@ void main() {
 	
 	vec3 c = vec3(0.);
 	for(int i = 0; i < SamplesPerFrame; i++) {
-		vec2 jitteredCoord = viewCoord + pixelScale*(vec2(RANDOM, RANDOM)-.5);
-		if(RANDOM < BloomStrength) {
+	
+		prngSample = uint(subframe) * uint(SamplesPerFrame) + uint(i) + pixelHash;
+		
+		vec2 jitteredCoord = viewCoord + pixelScale*(vec2(prng(PRNG_AA_U), prng(PRNG_AA_V))-.5);
+		if(random() < BloomStrength) {
 			// normal distribution of the bloom, following https://en.wikipedia.org/wiki/Box%E2%80%93Muller_transform
-			float a = RANDOM * TWO_PI;
-			jitteredCoord += BloomRadius * vec2(cos(a), sin(a)) * sqrt(-2. * log(RANDOM)) * cos(TWO_PI * RANDOM);
+			float a = random() * TWO_PI;
+			jitteredCoord += BloomRadius * vec2(cos(a), sin(a)) * sqrt(-2. * log(random())) * cos(TWO_PI * random());
 		}
 		vec3 rayPos = vec3(apertureDim * sampleAperture(), 0);
 		vec3 rayDir = normalize(rayPos + vec3(jitteredCoord * sensorSize, sensorDist));

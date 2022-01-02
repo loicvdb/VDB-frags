@@ -29,11 +29,11 @@ vec4 LinearMieColor = vec4(srgb2linear(MieColor.rgb), MieColor.w);
 
 vec3 lightSample(vec3 pos, out float dist) {
 	dist = -1.;
-	vec3 t = ORTHO(LightDirection);
+	vec3 t = ortho(LightDirection);
 	vec3 b = cross(t, LightDirection);
 	mat3 light2Word = mat3(t, b, LightDirection);
-	float a = RANDOM * TWO_PI;
-	float r =  1. - (1.-cos(LightRadius)) * RANDOM;
+	float a = random() * TWO_PI;
+	float r =  1. - (1.-cos(LightRadius)) * random();
 	return light2Word * vec3(sqrt(1. - r*r) * vec2(cos(a), sin(a)), r);
 }
 
