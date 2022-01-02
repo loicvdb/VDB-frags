@@ -40,7 +40,6 @@ uniform float NormalStepFactor; slider[0.,1.,4.]
 uniform bool PreviewPrecision; checkbox[false]
 uniform int PreviewPrecisionHeight; slider[540,1080,4320]
 uniform bool OneSampleMIS; checkbox[false]
-uniform bool PixelSeed; checkbox[true]
 #ifdef volumetric
 uniform bool EnableVolumetrics; checkbox[true]
 uniform int VolumeSteps; slider[8,64,256]
@@ -373,10 +372,6 @@ vec3 BRDF(vec3 V, vec3 L, vec3 pos) {
  ****************************************************************/
 
 vec3 color(vec3 pos, vec3 dir) {
-	
-	if(!PixelSeed) {
-		seedSquirrel3 = hash(uint(subframe));
-	}
 	
 	if(PreviewPrecision) fovPixelFactor = FOV/Precision/float(PreviewPrecisionHeight);
 	else fovPixelFactor = pixelScale.y*FOV/Precision;
