@@ -42,8 +42,8 @@ uniform int PreviewPrecisionHeight; slider[540,1080,4320]
 uniform bool OneSampleMIS; checkbox[false]
 #ifdef volumetric
 uniform bool EnableVolumetrics; checkbox[true]
-uniform int VolumeSteps; slider[8,64,256]
-uniform float VolumeStepSize; slider[0,.1,1.]
+uniform int VolumeSteps; slider[8,128,256]
+uniform float VolumeStepSize; slider[0,.15,1.]
 uniform bool VolumeStepRandomising; checkbox[true]
 #endif
 
