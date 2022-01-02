@@ -1,6 +1,6 @@
 #donotrun
 #include "3D-VDB.frag"
-#include "Extra-BRDFs.frag"
+#include "Standard-BRDFs.frag"
 #include "Color-Management.frag"
 
 
@@ -61,6 +61,7 @@ uniform float Cycles; slider[0.1,1.1,32.3]
 
 #group Material
 uniform float Roughness; slider[0.001,.1,1.]
+uniform bool Metallic; checkbox[false]
 uniform float IoR; slider[1,1.5,2.5]
 #ifdef volumetric
 uniform float VolumeDensity; slider[0,1.,100.]
@@ -296,71 +297,48 @@ vec3 baseColor(vec3 pos, vec3 n) {
 /****************************************************************
  * BRDFs n stuff.
  ****************************************************************/
- 
- // we define the materials for the preprocessor
- #define clearcoat 1
- #define glossy 2
- #define translucent 3
 
-vec3 BRDFSample(vec3 V) {
+vec3 BRDFSample(vec3 wo) {
 	#ifdef volumetric
 	if(hitVolume) {
-		return henyeyGreensteinImportanceSampling(VolumeAnisotropy);
+		return volumeBRDFSample();
 	} else
 	#endif
 	{
-		#if MATERIAL == clearcoat
-		return clearcoatGGXImportanceSampling(V, Roughness, IoR);
-		#endif
-		#if MATERIAL == glossy
-		return glossyGGXImportanceSampling(V, Roughness);
-		#endif
-		#if MATERIAL == translucent
-		return translucentImportanceSampling(V);
-		#endif
-		return lambertImportanceSampling(V);
+		return surfaceBRDFSample(wo);
 	}
 }
 
-float BRDFPDF(vec3 V, vec3 R) {
+float BRDFPDF(vec3 wo, vec3 wi) {
 	#ifdef volumetric
 	if(hitVolume) {
-		return henyeyGreensteinPDF(R, VolumeAnisotropy);
+		return volumeBRDFPDF(wi);
 	} else
 	#endif
 	{
-		#if MATERIAL == clearcoat
-		return clearcoatGGXPDF(V, R, Roughness, IoR);
-		#endif
-		#if MATERIAL == glossy
-		return glossyGGXPDF(V, R, Roughness);
-		#endif
-		#if MATERIAL == translucent
-		return translucentPDF(V, R);
-		#endif
-		return lambertPDF(V, R);
+		return surfaceBRDFPDF(wo, wi);
 	}
 }
 
-vec3 BRDF(vec3 V, vec3 L, vec3 pos) {
+vec3 BRDF(vec3 wo, vec3 wi) {
 	#ifdef volumetric
 	if(hitVolume) {
-		vec3 color = linear2acescg * LinearVolumeColor;
-		return henyeyGreensteinBRDF(L, color, VolumeAnisotropy);
+		return volumeBRDF(wi);
 	} else
 	#endif
 	{
-		vec3 color = linear2acescg * clamp(baseColor(pos, nTrace), vec3(0.), vec3(1.));
-		#if MATERIAL == clearcoat
-		return clearcoatGGXBRDF(V, L, Roughness, IoR, color);
-		#endif
-		#if MATERIAL == glossy
-		return glossyGGXBRDF(V, L, Roughness, color);
-		#endif
-		#if MATERIAL == translucent
-		return translucentBRDF(V, L, color);
-		#endif
-		return lambertBRDF(V, L, color);
+		return surfaceBRDF(wo, wi);
+	}
+}
+
+vec3 emission(vec3 wo) {
+	#ifdef volumetric
+	if(hitVolume) {
+		return volumeEmission(wo);
+	} else
+	#endif
+	{
+		return surfaceEmission(wo);
 	}
 }
 
@@ -408,6 +386,18 @@ vec3 color(vec3 pos, vec3 dir) {
 		
 		vec3 V = world2Brdf * -dir;
 		
+		// making sure we set the materials
+		#ifndef noDE
+		surface = surf(baseColor(pos, nTrace), vec3(0), Metallic, IoR, Roughness);
+		DE(pos);
+		#endif
+		#ifdef volumetric
+		volume = vol(VolumeColor, vec3(0), true, VolumeAnisotropy);
+		density(pos);
+		#endif
+		
+		outCol += att * (linear2acescg * emission(V));
+		
 		vec3 rX = BRDFSample(V);
 		float pdf11 = BRDFPDF(V, rX);
 		float pdf12 = lightPDF(brdf2World * rX);
@@ -429,7 +419,7 @@ vec3 color(vec3 pos, vec3 dir) {
 				R = lX;
 				att *= totalWeight / pdf22;
 			}
-			att *= BRDF(V, R, pos);
+			att *= linear2acescg * BRDF(V, R);
 			#ifdef volumetric
 			if(!hitVolume)
 			#endif
@@ -439,8 +429,8 @@ vec3 color(vec3 pos, vec3 dir) {
 			}
 		} else {
 			vec3 lPos = pos;
-			vec3 rBrdf = BRDF(V, rX, pos);
-			vec3 lBrdf = BRDF(V, lX, pos);
+			vec3 rBrdf = BRDF(V, rX);
+			vec3 lBrdf = BRDF(V, lX);
 			vec3 rReflectance = rBrdf / (pdf11 + pdf12);
 			vec3 lReflectance = lBrdf / (pdf21 + pdf22);
 			#ifdef volumetric
@@ -460,7 +450,7 @@ vec3 color(vec3 pos, vec3 dir) {
 				directLight = float(hit) * (linear2acescg * directLight);
 				outCol += lAtt * directLight * lReflectance;
 			}
-			att *= rReflectance;
+			att *= linear2acescg * rReflectance;
 			R = rX;
 		}
 			
