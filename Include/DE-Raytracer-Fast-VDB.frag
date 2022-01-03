@@ -40,11 +40,11 @@ uniform int AOStepsMultiplier; slider[1,4,16]
 
 #ifdef volumetric
 uniform bool EnableVolumetrics; checkbox[true]
-uniform int VolumeSteps; slider[8,64,256]
+uniform int VolumeSteps; slider[8,64,512]
 uniform int VolumeShadowSteps; slider[2,16,128]
 uniform int VolumeSkipShadow; slider[1,2,8]
-uniform float VolumeStepSize; slider[0,.1,1.]
-uniform bool VolumeStepRandomising; checkbox[true]
+uniform float VolumeStepFactor; slider[0.1,1.0,5.0]
+uniform float VolumeMaxDensity; slider[0,10.,100.]
 #endif
 
 #group Coloring
@@ -63,7 +63,7 @@ uniform float Cycles; slider[0.1,1.1,32.3]
 uniform float Roughness; slider[0.001,.1,1.]
 uniform float IoR; slider[1,1.5,2.5]
 #ifdef volumetric
-uniform float VolumeDensity; slider[0,1.,100.]
+uniform float VolumeDensityMultiplier; slider[0,1.,100.]
 uniform vec3 VolumeColor; color[1,1,1]
 uniform vec4 VolumeEmission; color[0.,0.,10.,1,1,1]
 uniform float VolumeAnisotropy; slider[-.99,0,.99]
@@ -321,10 +321,11 @@ vec3 directLight(vec3 pos, out vec3 lDir) {
 	#ifdef volumetric
 	vec2 sT = sphereIntersect(pos, lDir, vec3(0.), SceneRadius);
 	float end = sT.y;
-	float t = random() * VolumeStepSize;
+	float stepSize = VolumeStepFactor / VolumeMaxDensity;
+	float t = random() * stepSize;
 	for(int i = 0; i < VolumeShadowSteps && t < end; i++) {
-		att *= exp(-VolumeStepSize * VolumeDensity * density(pos + t*lDir));
-		t += VolumeStepSize;
+		att *= exp(-stepSize * VolumeDensityMultiplier * density(pos + t*lDir));
+		t += stepSize;
 	}
 	#endif
 	return att * (linear2acescg * directLight) / lightPDF(lDir);
@@ -336,7 +337,10 @@ vec3 integrateVolume(vec3 pos, vec3 dir, float t, out vec3 att) {
 	vec2 sT = sphereIntersect(pos, dir, vec3(0.), SceneRadius);
 	float start = max(0., sT.x);
 	float end = combine(t, sT.y);
-	t = start + random() * VolumeStepSize;
+	
+	float stepSize = VolumeStepFactor / VolumeMaxDensity;
+	
+	t = start + random() * stepSize;
 	
 	vec3 b = ortho(dir);
 	mat3 world2Brdf = inverse(mat3(cross(b, dir), b, dir));
@@ -346,14 +350,14 @@ vec3 integrateVolume(vec3 pos, vec3 dir, float t, out vec3 att) {
 	att = vec3(1);
 	vec3 outCol = vec3(0);
 	for(int i = 0; i < VolumeSteps && t < end; i++) {
-		float a = exp(-VolumeStepSize * density(pos + t*dir) * VolumeDensity);
+		float a = exp(-stepSize * density(pos + t*dir) * VolumeDensityMultiplier);
 		if((i+subframe)%VolumeSkipShadow == 0) {
 			vec3 lDir;
 			vec3 dl = directLight(pos + t*dir, lDir) * float(VolumeSkipShadow);
 			outCol += att * (1. - a) * dl * henyeyGreensteinBRDF(world2Brdf * lDir, color, VolumeAnisotropy);
 		}
 		att *= a;
-		t += VolumeStepSize;
+		t += stepSize;
 	}
 	
 	
