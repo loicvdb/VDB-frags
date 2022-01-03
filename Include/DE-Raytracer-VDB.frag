@@ -43,8 +43,7 @@ uniform bool OneSampleMIS; checkbox[false]
 #ifdef volumetric
 uniform bool EnableVolumetrics; checkbox[true]
 uniform int VolumeSteps; slider[8,128,1024]
-uniform float VolumeStepSize; slider[0,.15,1.]
-uniform bool VolumeStepRandomising; checkbox[true]
+uniform float VolumeMaxDensity; slider[0,10.,100.]
 #endif
 
 #group Coloring
@@ -64,7 +63,7 @@ uniform float Roughness; slider[0.001,.1,1.]
 uniform bool Metallic; checkbox[false]
 uniform float IoR; slider[1,1,2.5]
 #ifdef volumetric
-uniform float VolumeDensity; slider[0,1.,100.]
+uniform float VolumeDensityMultiplier; slider[0,1.,100.]
 uniform vec3 VolumeColor; color[1,1,1]
 uniform vec4 VolumeEmission; color[0.,0.,10.,1,1,1]
 uniform vec4 VolumeExtinction; color[0.,0.,100.,1,1,1]
@@ -205,18 +204,17 @@ float traceVolume(vec3 pos, vec3 dir, float maxT, inout vec3 att) {
 	
 	if(!EnableVolumetrics) return -1.;
 	
-	float t = -(VolumeStepRandomising ? random() : .5)*VolumeStepSize;
-	float bounceThreshold = -log(1.-random())/VolumeDensity;
-	float scattering = 0.;
+	bool hit = false;
+	float t = 0.0;
 	vec3 extinction = vec3(0);
-	for(int i = 0; i < VolumeSteps && scattering < bounceThreshold && t < maxT; i++) {
-		t += VolumeStepSize;
-		float d = density(pos + t*dir) * VolumeStepSize;
-		scattering += d;
-		extinction += d * LinearVolumeExtinction.rgb * LinearVolumeExtinction.w;
+	for (int i = 0; i < VolumeSteps && !hit && t < maxT; i++) {
+		t -= log(1.0 - random()) / VolumeMaxDensity;
+		float d = density(pos + dir * t) * VolumeDensityMultiplier;
+		hit = random() * VolumeMaxDensity < d;
+		extinction += min(d / VolumeMaxDensity, 1.0) * LinearVolumeExtinction.rgb * LinearVolumeExtinction.w;
 	}
 	att *= exp(linear2acescg * -extinction);
-    return scattering > bounceThreshold && t < maxT ? t : -1.;
+	return hit && t < maxT ? t : -1.0;
 }
 #endif
 
