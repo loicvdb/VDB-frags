@@ -350,13 +350,14 @@ vec3 integrateVolume(vec3 pos, vec3 dir, float t, out vec3 att) {
 	att = vec3(1);
 	vec3 outCol = vec3(0);
 	for(int i = 0; i < VolumeSteps && t < end; i++) {
-		float a = exp(-stepSize * density(pos + t*dir) * VolumeDensityMultiplier);
-		if((i+subframe)%VolumeSkipShadow == 0) {
+		float d = density(pos + t*dir);
+		if((i+subframe)%VolumeSkipShadow == 0 && d > 0.) {
+			float a = exp(-stepSize * d * VolumeDensityMultiplier);
 			vec3 lDir;
 			vec3 dl = directLight(pos + t*dir, lDir) * float(VolumeSkipShadow);
 			outCol += att * (1. - a) * dl * henyeyGreensteinBRDF(world2Brdf * lDir, color, VolumeAnisotropy);
-		}
 		att *= a;
+		}
 		t += stepSize;
 	}
 	
