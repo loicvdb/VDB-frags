@@ -15,8 +15,8 @@ float density(vec3 p) {
 
 #preset Default
 Bounces = 8
-VolumeStepSize = 0.03
-VolumeDensity = 30.333334
+VolumeMaxDensity = 30.0
+VolumeDensityMultiplier = 30.0
 VolumeColor = 1,0.866666667,0.901960784
 LightDirection = -0.74489796,0.344519215,0.571343627
 SceneRadius = 2

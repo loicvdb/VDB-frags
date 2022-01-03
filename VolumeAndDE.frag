@@ -36,7 +36,7 @@ SceneRadius = 2
 BackgroundColor = 0,0,0,0
 SamplesPerFrame = 2
 Bounces = 8
-VolumeStepSize = 0.1
-VolumeDensity = 10
+VolumeDensityMultiplier = 10
+VolumeMaxDensity = 10
 VolumeColor = 0.596078431,0.91372549,1
 #endpreset
