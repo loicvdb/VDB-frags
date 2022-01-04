@@ -39,7 +39,7 @@ uniform float StepFactor; slider[.1,1.,2.]
 uniform float NormalStepFactor; slider[0.,1.,4.]
 uniform bool PreviewPrecision; checkbox[false]
 uniform int PreviewPrecisionHeight; slider[540,1080,4320]
-uniform bool OneSampleMIS; checkbox[false]
+uniform float IndirectLightClamping; slider[0.1,10.,50.]
 #ifdef volumetric
 uniform bool EnableVolumetrics; checkbox[true]
 uniform int VolumeSteps; slider[8,128,512]
@@ -347,21 +347,37 @@ vec3 emission(vec3 wo) {
  * Function called by "3D-VDB.frag".
  ****************************************************************/
 
+vec3 clampedIllumination(vec3 li) {
+	float s = dot(li, vec3(0.33333)); 
+	return s < IndirectLightClamping ? li : li * IndirectLightClamping / s;
+}
+
 vec3 color(vec3 pos, vec3 dir) {
 	
 	if(PreviewPrecision) fovPixelFactor = FOV/Precision/float(PreviewPrecisionHeight);
 	else fovPixelFactor = pixelScale.y*FOV/Precision;
 	
-	vec3 att = vec3(1.), outCol = vec3(0.), lightColor;
+	vec3 att = vec3(1.), outCol = vec3(0.0);
 	
 	for(int i = 0; i <= Bounces; i++) {
 		float t = trace(pos, dir, -1., att);
+		vec3 lightColor;
 		if(hitLight(pos, dir, t, lightColor)) {
-			outCol += att * (linear2acescg * lightColor);
+			vec3 li = att * (linear2acescg * lightColor);
+			if (i == 0) {
+				outCol += li;
+			} else {
+				outCol += clampedIllumination(li);
+			}
 			break;
 		}
 		if(t < 0.) {
-			outCol += att * (linear2acescg * background(dir));
+			vec3 li = att * (linear2acescg * background(dir));
+			if (i <= 1) {
+				outCol += li;
+			} else {
+				outCol += clampedIllumination(li);
+			}
 			break;
 		}
 		
@@ -394,7 +410,14 @@ vec3 color(vec3 pos, vec3 dir) {
 		density(pos);
 		#endif
 		
-		outCol += att * (linear2acescg * emission(V));
+		{
+			vec3 li = att * (linear2acescg * emission(V));
+			if (i == 0) {
+				outCol += li;
+			} else {
+				outCol += clampedIllumination(li);
+			}
+		}
 		
 		vec3 prng = vec3(prng(PRNG_BASE + i * PRNG_BOUNCE + PRNG_BRDF_U),
 						 prng(PRNG_BASE + i * PRNG_BOUNCE + PRNG_BRDF_V),
@@ -409,56 +432,40 @@ vec3 color(vec3 pos, vec3 dir) {
 		float pdf21 = BRDFPDF(V, lX);
 		float pdf22 = lightPDF(brdf2World * lX);
 		
-		vec3 R;
-		if(OneSampleMIS) {
-			float weight1 = pdf11 / (pdf11 + pdf12);
-			float weight2 = pdf22 / (pdf21 + pdf22);
-			float totalWeight = weight1 + weight2;
-			if(random() * totalWeight < weight1) {
-				R = rX;
-				att *= totalWeight / pdf11;
-			} else {
-				R = lX;
-				att *= totalWeight / pdf22;
-			}
-			att *= linear2acescg * BRDF(V, R);
-			#ifdef volumetric
-			if(!hitVolume)
-			#endif
-			{
-				pos += z*(hd*sign(R.z)-dz)*NormalStepFactor;
-				att *= abs(R.z);
-			}
-		} else {
-			vec3 lPos = pos;
-			vec3 rBrdf = BRDF(V, rX);
-			vec3 lBrdf = BRDF(V, lX);
-			vec3 rReflectance = rBrdf / (pdf11 + pdf12);
-			vec3 lReflectance = lBrdf / (pdf21 + pdf22);
-			#ifdef volumetric
-			if(!hitVolume)
-			#endif
-			{
-				pos  += z*(hd*sign(rX.z)-dz)*NormalStepFactor;
-				lPos += z*(hd*sign(lX.z)-dz)*NormalStepFactor;
-				rReflectance *= abs(rX.z);
-				lReflectance *= abs(lX.z);
-			}
-			if(i != Bounces) {
-				vec3 lAtt = att;
-				float lt = trace(lPos, brdf2World * lX, lightDist, lAtt);
-				vec3 directLight;
-				bool hit = hitLight(lPos, brdf2World * lX, lt, directLight);
-				directLight = float(hit) * (linear2acescg * directLight);
-				outCol += lAtt * directLight * lReflectance;
-			}
-			att *= linear2acescg * rReflectance;
-			R = rX;
+		vec3 lPos = pos;
+		vec3 rBrdf = BRDF(V, rX);
+		vec3 lBrdf = BRDF(V, lX);
+		vec3 rReflectance = rBrdf / (pdf11 + pdf12);
+		vec3 lReflectance = lBrdf / (pdf21 + pdf22);
+		#ifdef volumetric
+		if(!hitVolume)
+		#endif
+		{
+			pos  += z*(hd*sign(rX.z)-dz)*NormalStepFactor;
+			lPos += z*(hd*sign(lX.z)-dz)*NormalStepFactor;
+			rReflectance *= abs(rX.z);
+			lReflectance *= abs(lX.z);
 		}
+		if(i != Bounces) {
+			vec3 lAtt = att;
+			float lt = trace(lPos, brdf2World * lX, lightDist, lAtt);
+			vec3 directLight;
+			bool hit = hitLight(lPos, brdf2World * lX, lt, directLight);
+			directLight = float(hit) * (linear2acescg * directLight);
+			vec3 li = lAtt * directLight * lReflectance;
+			if (i == 0) {
+				outCol += li;
+			} else {
+				outCol += clampedIllumination(li);
+			}
+		}
+		att *= linear2acescg * rReflectance;
 			
-		dir = brdf2World * R;
+		dir = brdf2World * rX;
+		
 		if(dot(att, vec3(1)) <= 0.) break;
 	}
+	
 	if(outCol != outCol) return vec3(0.);
 	return acescg2linear * outCol;		// we return sRGB for compatility with other buffer shaders / 3D cameras
 }
