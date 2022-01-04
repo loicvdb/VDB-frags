@@ -15,7 +15,7 @@ uniform float FracMotionBlur; slider[0,0,1]
 uniform vec3 FracCol; slider[(-2,-2,-2),(.42,.38,.19),(2,2,2)]
 uniform float FracColGamma; slider[1,2.2,4]
 
-float animBlur = RANDOM-.5;
+float animBlur = random()-.5;
 float animFracAng1 = FracAng1 + FracAnimation.x * sin((time + FracMotionBlur*animBlur) * 60. * .015);
 float animFracAng2 = FracAng2 + FracAnimation.y * sin((time + FracMotionBlur*animBlur) * 60. * .015);
 vec3 animFracShift = FracShift + vec3(0, FracAnimation.z * sin((time + FracMotionBlur*animBlur) * 60. * .015), 0);
