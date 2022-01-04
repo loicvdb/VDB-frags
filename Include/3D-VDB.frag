@@ -54,6 +54,8 @@ void init();
 void init() {}
 #endif
 
+int cameraSample = 0;
+
 // implement this;
 vec3 color(vec3 pos, vec3 direction);
 
@@ -100,9 +102,9 @@ void main() {
 	float lensFocalDist = 1./(1./sensorDist + 1./FocalPlane);
 	
 	vec3 c = vec3(0.);
-	for(int i = 0; i < SamplesPerFrame; i++) {
+	for(cameraSample = 0; cameraSample < SamplesPerFrame; cameraSample++) {
 	
-		prngSample = uint(subframe) * uint(SamplesPerFrame) + uint(i) + pixelHash;
+		prngSample = uint(subframe) * uint(SamplesPerFrame) + uint(cameraSample) + pixelHash;
 		
 		vec2 jitteredCoord = viewCoord + pixelScale*(vec2(prng(PRNG_AA_U), prng(PRNG_AA_V))-.5);
 		if(random() < BloomStrength) {

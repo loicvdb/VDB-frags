@@ -1,6 +1,6 @@
 #donotrun
 #include "3D-VDB.frag"
-#include "Extra-BRDFs.frag"
+#include "Standard-BRDFs.frag"
 #include "Color-Management.frag"
 
 
@@ -42,9 +42,9 @@ uniform int AOStepsMultiplier; slider[1,4,16]
 uniform bool EnableVolumetrics; checkbox[true]
 uniform int VolumeSteps; slider[8,64,512]
 uniform int VolumeShadowSteps; slider[2,16,128]
-uniform int VolumeSkipShadow; slider[1,2,8]
-uniform float VolumeStepFactor; slider[0.1,1.0,5.0]
+uniform float VolumeStepFactor; slider[0.01,1.0,5.0]
 uniform float VolumeMaxDensity; slider[0,10.,100.]
+uniform float VolumeAmbientLighting; slider[0.0,0.2,1.0]
 #endif
 
 #group Coloring
@@ -61,11 +61,13 @@ uniform float Cycles; slider[0.1,1.1,32.3]
 
 #group Material
 uniform float Roughness; slider[0.001,.1,1.]
+uniform bool Metallic; checkbox[false]
 uniform float IoR; slider[1,1.5,2.5]
 #ifdef volumetric
 uniform float VolumeDensityMultiplier; slider[0,1.,100.]
 uniform vec3 VolumeColor; color[1,1,1]
 uniform vec4 VolumeEmission; color[0.,0.,10.,1,1,1]
+uniform vec4 VolumeExtinction; color[0.,0.,100.,1,1,1]
 uniform float VolumeAnisotropy; slider[-.99,0,.99]
 #endif
 
@@ -92,6 +94,7 @@ vec4 LinearR = vec4(srgb2linear(R.rgb), R.w);
 #ifdef volumetric
 vec3 LinearVolumeColor = srgb2linear(VolumeColor);
 vec4 LinearVolumeEmission = vec4(srgb2linear(VolumeEmission.rgb), VolumeEmission.w);
+vec4 LinearVolumeExtinction = vec4(srgb2linear(VolumeExtinction.rgb), VolumeExtinction.w);
 #endif
 
 
@@ -254,81 +257,30 @@ vec3 baseColor(vec3 pos, vec3 n) {
 #endif
 
 
-
-
-/****************************************************************
- * BRDFs n stuff.
- ****************************************************************/
- 
- // we define the materials for the preprocessor
- #define clearcoat 1
- #define glossy 2
-
-vec3 BRDFSample(vec3 V) {
-	#if MATERIAL == clearcoat
-	return clearcoatGGXImportanceSampling(V, Roughness, IoR);
-	#else
-	#if MATERIAL == glossy
-	return glossyGGXImportanceSampling(V, Roughness);
-	#else
-	return lambertImportanceSampling(V);
-	#endif
-	#endif
-}
-
-float BRDFPDF(vec3 V, vec3 R) {
-	#if MATERIAL == clearcoat
-	return clearcoatGGXPDF(V, R, Roughness, IoR);
-	#else
-	#if MATERIAL == glossy
-	return glossyGGXPDF(V, R, Roughness);
-	#else
-	return lambertPDF(V, R);
-	#endif
-	#endif
-}
-
-vec3 BRDF(vec3 V, vec3 L, vec3 pos) {
-	vec3 color = linear2acescg * clamp(baseColor(pos, nTrace), vec3(0.), vec3(1.));
-	#if MATERIAL == clearcoat
-	return clearcoatGGXBRDF(V, L, Roughness, IoR, color);
-	#else
-	#if MATERIAL == glossy
-	return glossyGGXBRDF(V, L, Roughness, color);
-	#else
-	return lambertBRDF(V, L, color);
-	#endif
-	#endif
-}
-
-
-
-
 /****************************************************************
  * Shading functions.
  ****************************************************************/
 
 
-vec3 directLight(vec3 pos, out vec3 lDir) {
-	float lightDist;
-	lDir = lightSample(pos, lightDist);
-	float lt = trace(pos, lDir, lightDist);
+vec3 directLight(vec3 pos, vec3 lightDir, float lightDist) {
+	float lt = trace(pos, lightDir, lightDist);
 	vec3 directLight;
-	if(!hitLight(pos, lDir, lt, directLight)) {
+	if(!hitLight(pos, lightDir, lt, directLight)) {
 		return vec3(0);
 	}
 	vec3 att = vec3(1);
 	#ifdef volumetric
-	vec2 sT = sphereIntersect(pos, lDir, vec3(0.), SceneRadius);
+	vec2 sT = sphereIntersect(pos, lightDir, vec3(0.), SceneRadius);
 	float end = sT.y;
 	float stepSize = VolumeStepFactor / VolumeMaxDensity;
 	float t = random() * stepSize;
 	for(int i = 0; i < VolumeShadowSteps && t < end; i++) {
-		att *= exp(-stepSize * VolumeDensityMultiplier * density(pos + t*lDir));
+		volume = vol(VolumeColor, vec3(0), true, VolumeAnisotropy);
+		att *= exp(-stepSize * VolumeDensityMultiplier * density(pos + t*lightDir) * (1.0 + (linear2acescg * LinearVolumeExtinction.rgb) * LinearVolumeExtinction.w));
 		t += stepSize;
 	}
 	#endif
-	return att * (linear2acescg * directLight) / lightPDF(lDir);
+	return att * (linear2acescg * directLight) / lightPDF(lightDir);
 }
 
 #ifdef volumetric
@@ -340,27 +292,42 @@ vec3 integrateVolume(vec3 pos, vec3 dir, float t, out vec3 att) {
 	
 	float stepSize = VolumeStepFactor / VolumeMaxDensity;
 	
+	uint vseed = uint(subframe * SamplesPerFrame + cameraSample) * 0x782b6123u;
+	
 	t = start + random() * stepSize;
 	
 	vec3 b = ortho(dir);
-	mat3 world2Brdf = inverse(mat3(cross(b, dir), b, dir));
+	mat3 brdf2World = mat3(cross(b, dir), b, dir);
+	mat3 world2Brdf = inverse(brdf2World);
 	
 	vec3 color = linear2acescg * LinearVolumeColor;
 	
-	att = vec3(1);
+	att = vec3(1.0);
 	vec3 outCol = vec3(0);
 	for(int i = 0; i < VolumeSteps && t < end; i++) {
-		float d = density(pos + t*dir);
-		if((i+subframe)%VolumeSkipShadow == 0 && d > 0.) {
-			float a = exp(-stepSize * d * VolumeDensityMultiplier);
-			vec3 lDir;
-			vec3 dl = directLight(pos + t*dir, lDir) * float(VolumeSkipShadow);
-			outCol += att * (1. - a) * dl * henyeyGreensteinBRDF(world2Brdf * lDir, color, VolumeAnisotropy);
-		att *= a;
+		volume = vol(VolumeColor, vec3(0), true, VolumeAnisotropy);
+		float d = density(pos + t*dir) * VolumeDensityMultiplier;
+		float a = exp(-stepSize * d);
+		
+		// hardcoded for now
+		float samplingRate = 20.0;
+		float samplingProb = min((1. - a) * samplingRate, 1.0);
+		
+		if (uintRangeToFloat(bitfieldReverse(vseed++)) < samplingProb) {
+			float lightDist;
+			vec3 lightDir = lightSample(pos, lightDist);
+			vec3 prng = vec3(random(), random(), random());
+			vec3 R = volumeBRDFSample(prng);
+			vec3 lBrdf = linear2acescg * volumeBRDF(world2Brdf * lightDir);
+			vec3 aBrdf = linear2acescg * volumeBRDF(R) / volumeBRDFPDF(R);
+			vec3 dl = directLight(pos + t*dir, lightDir, lightDist);
+			vec3 al = linear2acescg * VolumeAmbientLighting * background(brdf2World * R);
+			outCol += (1. - a) / samplingProb * att * (dl * lBrdf + al * aBrdf);
 		}
+		
+		att *= a * exp(-stepSize * d * (linear2acescg * LinearVolumeExtinction.rgb) * LinearVolumeExtinction.w);
 		t += stepSize;
 	}
-	
 	
 	return outCol;
 }
@@ -404,15 +371,25 @@ vec3 color(vec3 pos, vec3 dir) {
 		
 		vec3 V = world2Brdf * -dir;
 		
-		vec3 R = BRDFSample(V);
-		vec3 aoR = BRDF(V, R, pos) / BRDFPDF(V, R) * abs(R.z);
+		// making sure we set the materials
+		#ifndef noDE
+		surface = surf(baseColor(pos, nTrace), vec3(0), Metallic, IoR, Roughness);
+		DE(pos);
+		#endif
+		
+		vec3 prng = vec3(prng(PRNG_BASE + PRNG_BRDF_U),
+						 prng(PRNG_BASE + PRNG_BRDF_V),
+						 prng(PRNG_BASE + PRNG_BRDF));
+		vec3 R = surfaceBRDFSample(V, prng);
+		vec3 aoR = surfaceBRDF(V, R) / surfaceBRDFPDF(V, R) * abs(R.z);
 		
 		vec3 oPos = pos + z*(2.*HITDIST(pos)-DE(pos));
 		
-		vec3 lDir;
-		vec3 dl = directLight(oPos, lDir);
-		vec3 L = world2Brdf * lDir;
-		outCol += att * dl * abs(L.z) * BRDF(V, L, pos);
+		float lightDist;
+		vec3 lightDir = lightSample(pos, lightDist);
+		vec3 L = world2Brdf * lightDir;
+		vec3 brdf = linear2acescg * surfaceBRDF(V, L);
+		outCol += att * abs(L.z) * brdf * directLight(oPos, lightDir, lightDist);
 		
 		float ao = 1.;
 		float dist = DE(oPos);
