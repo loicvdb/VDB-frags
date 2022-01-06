@@ -435,8 +435,10 @@ vec3 color(vec3 pos, vec3 dir) {
 		vec3 lPos = pos;
 		vec3 rBrdf = BRDF(V, rX);
 		vec3 lBrdf = BRDF(V, lX);
-		vec3 rReflectance = rBrdf / (pdf11 + pdf12);
-		vec3 lReflectance = lBrdf / (pdf21 + pdf22);
+		float pdf1 = pdf11 + pdf12;
+		float pdf2 = pdf21 + pdf22;
+		vec3 rReflectance = pdf1 > 0.0 ? rBrdf / pdf1 : vec3(0.0);
+		vec3 lReflectance = pdf2 > 0.0 ? lBrdf / pdf2 : vec3(0.0);
 		#ifdef volumetric
 		if(!hitVolume)
 		#endif
@@ -466,6 +468,6 @@ vec3 color(vec3 pos, vec3 dir) {
 		if(dot(att, vec3(1)) <= 0.) break;
 	}
 	
-	if(outCol != outCol) return vec3(0.);
+	if(any(isnan(outCol))) return vec3(0.);
 	return acescg2linear * outCol;		// we return sRGB for compatility with other buffer shaders / 3D cameras
 }

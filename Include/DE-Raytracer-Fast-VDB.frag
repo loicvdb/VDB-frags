@@ -381,7 +381,8 @@ vec3 color(vec3 pos, vec3 dir) {
 						 prng(PRNG_BASE + PRNG_BRDF_V),
 						 prng(PRNG_BASE + PRNG_BRDF));
 		vec3 R = surfaceBRDFSample(V, prng);
-		vec3 aoR = surfaceBRDF(V, R) / surfaceBRDFPDF(V, R) * abs(R.z);
+		float pdf = surfaceBRDFPDF(V, R);
+		vec3 aoR = pdf > 0.0 ? surfaceBRDF(V, R) / pdf * abs(R.z) : vec3(0.0);
 		
 		vec3 oPos = pos + z*(2.*HITDIST(pos)-DE(pos));
 		
@@ -407,6 +408,6 @@ vec3 color(vec3 pos, vec3 dir) {
 		outCol += att * (linear2acescg * background(brdf2World * R)) * aoR * pow(ao, AOStrength);
 	}
 	
-	if(outCol != outCol) return vec3(0.);
+	if(any(isnan(outCol))) return vec3(0.);
 	return acescg2linear * outCol;  // we return sRGB for compatility with other buffer shaders / 3D cameras*/
 }
