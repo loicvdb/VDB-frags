@@ -292,13 +292,15 @@ vec3 integrateVolume(vec3 pos, vec3 dir, float t, out vec3 att) {
 	
 	float stepSize = VolumeStepFactor / VolumeMaxDensity;
 	
-	uint vseed = uint(subframe * SamplesPerFrame + cameraSample) * 0x782b6123u;
+	int vseed = (subframe * SamplesPerFrame + cameraSample) * 0x782b6123;
 	
 	t = start + random() * stepSize;
 	
 	vec3 b = ortho(dir);
 	mat3 brdf2World = mat3(cross(b, dir), b, dir);
-	mat3 world2Brdf = inverse(brdf2World);
+	mat3 world2Brdf = mat3(brdf2World[0].x, brdf2World[1].x, brdf2World[2].x,
+						   brdf2World[0].y, brdf2World[1].y, brdf2World[2].y,
+						   brdf2World[0].z, brdf2World[1].z, brdf2World[2].z);
 	
 	vec3 color = linear2acescg * LinearVolumeColor;
 	
@@ -313,7 +315,7 @@ vec3 integrateVolume(vec3 pos, vec3 dir, float t, out vec3 att) {
 		float samplingRate = 20.0;
 		float samplingProb = min((1. - a) * samplingRate, 1.0);
 		
-		if (uintRangeToFloat(bitfieldReverse(vseed++)) < samplingProb) {
+		if (intRangeToFloat(bitfieldReverse(vseed++)) < samplingProb) {
 			float lightDist;
 			vec3 lightDir = lightSample(pos, lightDist);
 			vec3 prng = vec3(random(), random(), random());
@@ -367,7 +369,9 @@ vec3 color(vec3 pos, vec3 dir) {
 		
 		vec3 b = ortho(z);
 		mat3 brdf2World = mat3(cross(b, z), b, z);
-		mat3 world2Brdf = inverse(brdf2World);
+		mat3 world2Brdf = mat3(brdf2World[0].x, brdf2World[1].x, brdf2World[2].x,
+							   brdf2World[0].y, brdf2World[1].y, brdf2World[2].y,
+							   brdf2World[0].z, brdf2World[1].z, brdf2World[2].z);
 		
 		vec3 V = world2Brdf * -dir;
 		
@@ -408,6 +412,5 @@ vec3 color(vec3 pos, vec3 dir) {
 		outCol += att * (linear2acescg * background(brdf2World * R)) * aoR * pow(ao, AOStrength);
 	}
 	
-	if(any(isnan(outCol))) return vec3(0.);
 	return acescg2linear * outCol;  // we return sRGB for compatility with other buffer shaders / 3D cameras*/
 }

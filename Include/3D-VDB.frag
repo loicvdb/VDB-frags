@@ -97,14 +97,14 @@ void main() {
 	vec2 apertureDim = vec2(1./sqAp, sqAp);
 	apertureDim *= Aperture / max(apertureDim.x, apertureDim.y);
 	
-	float sensorDist = 1;
+	float sensorDist = 1.;
 	float sensorSize = sensorDist * FOV;
 	float lensFocalDist = 1./(1./sensorDist + 1./FocalPlane);
 	
 	vec3 c = vec3(0.);
 	for(cameraSample = 0; cameraSample < SamplesPerFrame; cameraSample++) {
 	
-		prngSample = uint(subframe) * uint(SamplesPerFrame) + uint(cameraSample) + pixelHash;
+		prngSample = subframe * SamplesPerFrame + cameraSample + pixelHash;
 		
 		vec2 jitteredCoord = viewCoord + pixelScale*(vec2(prng(PRNG_AA_U), prng(PRNG_AA_V))-.5);
 		if(random() < BloomStrength) {

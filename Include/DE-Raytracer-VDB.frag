@@ -396,7 +396,9 @@ vec3 color(vec3 pos, vec3 dir) {
 		#endif
 		vec3 b = ortho(z);
 		mat3 brdf2World = mat3(cross(b, z), b, z);
-		mat3 world2Brdf = inverse(brdf2World);
+		mat3 world2Brdf = mat3(brdf2World[0].x, brdf2World[1].x, brdf2World[2].x,
+							   brdf2World[0].y, brdf2World[1].y, brdf2World[2].y,
+							   brdf2World[0].z, brdf2World[1].z, brdf2World[2].z);
 		
 		vec3 V = world2Brdf * -dir;
 		
@@ -468,6 +470,5 @@ vec3 color(vec3 pos, vec3 dir) {
 		if(dot(att, vec3(1)) <= 0.) break;
 	}
 	
-	if(any(isnan(outCol))) return vec3(0.);
 	return acescg2linear * outCol;		// we return sRGB for compatility with other buffer shaders / 3D cameras
 }
