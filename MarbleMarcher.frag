@@ -8,7 +8,6 @@ float DE(vec3 pos) {
 
 #preset Default
 Precision = 4
-OneSampleMIS = true
 LightDirection = 0.826487608,0.562862426,-0.01020408
 FracScale = 1.9073
 FracAng1 = 2.736
