@@ -41,7 +41,7 @@ void main() {
 	c = pow(c, vec3(2.2/Gamma));	// we are already in sRGB, so we remove the default 2.2 gamma
 	
 	// Dithering to avoid banding
-	c += (vec3(RANDOM, RANDOM, RANDOM) - .5) / 255.;
+	c += (vec3(random(), random(), random()) - .5) / 255.;
 	
 	gl_FragColor = vec4(clamp(c, vec3(0.), vec3(1.)), 1.);
 }
