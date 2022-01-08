@@ -110,7 +110,7 @@ void main() {
 		if(random() < BloomStrength) {
 			// normal distribution of the bloom, following https://en.wikipedia.org/wiki/Box%E2%80%93Muller_transform
 			float a = random() * TWO_PI;
-			jitteredCoord += BloomRadius * vec2(cos(a), sin(a)) * sqrt(-2. * log(random())) * cos(TWO_PI * random());
+			jitteredCoord += BloomRadius * vec2(cos(a), sin(a)) * sqrt(-2. * log(1.0 - random() * 0.99)) * cos(TWO_PI * random());
 		}
 		vec3 rayPos = vec3(apertureDim * sampleAperture(), 0);
 		vec3 rayDir = normalize(rayPos + vec3(jitteredCoord * sensorSize, sensorDist));
