@@ -332,7 +332,7 @@ vec3 BRDF(vec3 wo, vec3 wi) {
 vec3 emission(vec3 wo) {
 	#ifdef volumetric
 	if(hitVolume) {
-		return volumeEmission(wo);
+		return volumeEmission();
 	} else
 	#endif
 	{
@@ -408,7 +408,7 @@ vec3 color(vec3 pos, vec3 dir) {
 		DE(pos);
 		#endif
 		#ifdef volumetric
-		volume = vol(VolumeColor, vec3(0), true, VolumeAnisotropy);
+		volume = vol(LinearVolumeColor, LinearVolumeEmission.rgb * LinearVolumeEmission.a, true, VolumeAnisotropy);
 		density(pos);
 		#endif
 		

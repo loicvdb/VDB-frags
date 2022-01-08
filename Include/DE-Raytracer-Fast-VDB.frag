@@ -307,7 +307,7 @@ vec3 integrateVolume(vec3 pos, vec3 dir, float t, out vec3 att) {
 	att = vec3(1.0);
 	vec3 outCol = vec3(0);
 	for(int i = 0; i < VolumeSteps && t < end; i++) {
-		volume = vol(VolumeColor, vec3(0), true, VolumeAnisotropy);
+		volume = vol(LinearVolumeColor, LinearVolumeEmission.rgb * LinearVolumeEmission.a, true, VolumeAnisotropy);
 		float d = density(pos + t*dir) * VolumeDensityMultiplier;
 		float a = exp(-stepSize * d);
 		
@@ -320,11 +320,12 @@ vec3 integrateVolume(vec3 pos, vec3 dir, float t, out vec3 att) {
 			vec3 lightDir = lightSample(pos, lightDist);
 			vec3 prng = vec3(random(), random(), random());
 			vec3 R = volumeBRDFSample(prng);
+			vec3 emission = linear2acescg * volumeEmission();
 			vec3 lBrdf = linear2acescg * volumeBRDF(world2Brdf * lightDir);
 			vec3 aBrdf = linear2acescg * volumeBRDF(R) / volumeBRDFPDF(R);
 			vec3 dl = directLight(pos + t*dir, lightDir, lightDist);
 			vec3 al = linear2acescg * VolumeAmbientLighting * background(brdf2World * R);
-			outCol += (1. - a) / samplingProb * att * (dl * lBrdf + al * aBrdf);
+			outCol += (1. - a) / samplingProb * att * (dl * lBrdf + al * aBrdf + emission);
 		}
 		
 		att *= a * exp(-stepSize * d * (linear2acescg * LinearVolumeExtinction.rgb) * LinearVolumeExtinction.w);
@@ -380,6 +381,8 @@ vec3 color(vec3 pos, vec3 dir) {
 		surface = surf(baseColor(pos, nTrace), vec3(0), Metallic, IoR, Roughness);
 		DE(pos);
 		#endif
+		
+		outCol += surfaceEmission(V);
 		
 		vec3 prng = vec3(prng(PRNG_BASE + PRNG_BRDF_U),
 						 prng(PRNG_BASE + PRNG_BRDF_V),

@@ -137,6 +137,6 @@ vec3 volumeBRDF(vec3 wi) {
  	return volumeBRDFPDF(wi) * volume.albedo;
 }
 
-vec3 volumeEmission(vec3 wi) {
+vec3 volumeEmission() {
 	return volume.emission;
 }
