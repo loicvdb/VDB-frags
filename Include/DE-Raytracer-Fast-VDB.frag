@@ -311,24 +311,30 @@ vec3 integrateVolume(vec3 pos, vec3 dir, float t, out vec3 att) {
 		float d = density(pos + t*dir) * VolumeDensityMultiplier;
 		float a = exp(-stepSize * d);
 		
+		att *= exp(-stepSize * d * (linear2acescg * LinearVolumeExtinction.rgb) * LinearVolumeExtinction.w);
+		
+		vec3 emission = linear2acescg * volumeEmission();
+		outCol += (1. - a) * att * emission;
+		
+		float attLuminance = dot(att, vec3(0.272228716, 0.6740817658, 0.0536895174));
+		
 		// hardcoded for now
-		float samplingRate = 20.0;
-		float samplingProb = min((1. - a) * samplingRate, 1.0);
+		float samplingRate = 50.0;
+		float samplingProb = min(attLuminance * (1. - a) * samplingRate, 1.0);
 		
 		if (intRangeToFloat(bitfieldReverse(vseed++)) < samplingProb) {
 			float lightDist;
 			vec3 lightDir = lightSample(pos, lightDist);
 			vec3 prng = vec3(random(), random(), random());
 			vec3 R = volumeBRDFSample(prng);
-			vec3 emission = linear2acescg * volumeEmission();
 			vec3 lBrdf = linear2acescg * volumeBRDF(world2Brdf * lightDir);
 			vec3 aBrdf = linear2acescg * volumeBRDF(R) / volumeBRDFPDF(R);
 			vec3 dl = directLight(pos + t*dir, lightDir, lightDist);
 			vec3 al = linear2acescg * VolumeAmbientLighting * background(brdf2World * R);
-			outCol += (1. - a) / samplingProb * att * (dl * lBrdf + al * aBrdf + emission);
+			outCol += (1. - a) * att / samplingProb * (dl * lBrdf + al * aBrdf);
 		}
 		
-		att *= a * exp(-stepSize * d * (linear2acescg * LinearVolumeExtinction.rgb) * LinearVolumeExtinction.w);
+		att *= a;
 		t += stepSize;
 	}
 	
