@@ -389,14 +389,14 @@ vec3 color(vec3 pos, vec3 dir) {
 		DE(pos);
 		#endif
 		
-		outCol += surfaceEmission(V);
+		outCol += linear2acescg * surfaceEmission(V);
 		
 		vec3 prng = vec3(prng(PRNG_BASE + PRNG_BRDF_U),
 						 prng(PRNG_BASE + PRNG_BRDF_V),
 						 prng(PRNG_BASE + PRNG_BRDF));
 		vec3 R = surfaceBRDFSample(V, prng);
 		float pdf = surfaceBRDFPDF(V, R);
-		vec3 aoR = pdf > 0.0 ? surfaceBRDF(V, R) / pdf * abs(R.z) : vec3(0.0);
+		vec3 aoR = pdf > 0.0 ? linear2acescg * surfaceBRDF(V, R) / pdf * abs(R.z) : vec3(0.0);
 		
 		vec3 oPos = pos + z*(2.*HITDIST(pos)-DE(pos));
 		

@@ -436,8 +436,8 @@ vec3 color(vec3 pos, vec3 dir) {
 		float pdf22 = lightPDF(brdf2World * lX);
 		
 		vec3 lPos = pos;
-		vec3 rBrdf = BRDF(V, rX);
-		vec3 lBrdf = BRDF(V, lX);
+		vec3 rBrdf = linear2acescg * BRDF(V, rX);
+		vec3 lBrdf = linear2acescg * BRDF(V, lX);
 		float pdf1 = pdf11 + pdf12;
 		float pdf2 = pdf21 + pdf22;
 		vec3 rReflectance = pdf1 > 0.0 ? rBrdf / pdf1 : vec3(0.0);
@@ -464,7 +464,7 @@ vec3 color(vec3 pos, vec3 dir) {
 				outCol += clampedIllumination(li);
 			}
 		}
-		att *= linear2acescg * rReflectance;
+		att *= rReflectance;
 			
 		dir = brdf2World * rX;
 		
