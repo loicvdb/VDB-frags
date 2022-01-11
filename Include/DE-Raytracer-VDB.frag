@@ -192,7 +192,8 @@ float sdfTrace(vec3 pos, vec3 dir, float maxT) {
 			dist = CDE(p, hd);
 		}
 		vec2 k = vec2(max(dist, 1e-6), 0);
-		nTrace = normalize(vec3(DE(p+k.xyy)-DE(p-k.xyy), DE(p+k.yxy)-DE(p-k.yxy), DE(p+k.yyx)-DE(p-k.yyx)));
+		nTrace = vec3(DE(p+k.xyy)-DE(p-k.xyy), DE(p+k.yxy)-DE(p-k.yxy), DE(p+k.yyx)-DE(p-k.yyx));
+		nTrace = dot(nTrace, nTrace) > 0.0 ? normalize(nTrace) : -dir;
 		return t;
 	} 
 	return -1.;

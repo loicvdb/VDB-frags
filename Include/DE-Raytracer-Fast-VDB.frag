@@ -198,7 +198,8 @@ float sdfTrace(vec3 pos, vec3 dir, float maxT) {
 			dist = CDE(p, hd);
 		}
 		vec2 k = vec2(max(dist, 1e-6), 0);
-		nTrace = normalize(vec3(DE(p+k.xyy)-DE(p-k.xyy), DE(p+k.yxy)-DE(p-k.yxy), DE(p+k.yyx)-DE(p-k.yyx)));
+		nTrace = vec3(DE(p+k.xyy)-DE(p-k.xyy), DE(p+k.yxy)-DE(p-k.yxy), DE(p+k.yyx)-DE(p-k.yyx));
+		nTrace = dot(nTrace, nTrace) > 0.0 ? normalize(nTrace) : -dir;
 		return t;
 	} 
 	return -1.;
@@ -408,11 +409,11 @@ vec3 color(vec3 pos, vec3 dir) {
 		float ao = 1.;
 		float dist = DE(oPos);
 		for(int i = 0; i < AOSteps && dot(oPos, oPos) < SceneRadius*SceneRadius; i++) {
-			for(int j = 0; j < AOStepsMultiplier; j++) {
+			for(int j = 0; j < AOStepsMultiplier && dist > 0.0; j++) {
 				float stepSize = random();
 				oPos += z * dist * stepSize;
 				float expected = dist * (1. + stepSize);
-				dist = DE(oPos);
+				dist = max(DE(oPos), 0.0);
 				ao *= dist / expected;
 			}
 			vec2 k = vec2(max(dist, 1e-6), 0);
