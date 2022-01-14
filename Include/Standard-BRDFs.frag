@@ -71,16 +71,22 @@ float fresnel(vec3 wo, vec3 h, float ior) {
 }
 
 vec3 surfaceBRDFSample(vec3 wo, vec3 prng) {
+	float s = sign(wo.z);
+	wo.z *= s;
 	vec3 h = sampleGGXVNDF(wo, surface.roughness, prng.xy);
 	float f = surface.metallic ? 1.0 : fresnel(wo, h, surface.ior);
 	float a = prng.x * TWO_PI;
-	float r = sqrt(prng.y) * sign(wo.z);
+	float r = sqrt(prng.y);
 	vec3 R = (prng.z < f) ? reflect(-wo, h) : vec3(sqrt(1. - r * r) * vec2(cos(a), sin(a)), r);
+	R.z *= s;
 	return R;
 }
 
 float surfaceBRDFPDF(vec3 wo, vec3 wi) {
-	if(wo.z <= 0. || wi.z <= 0.) return 0.;
+	float s = sign(wo.z);
+	wi.z *= s;
+	wo.z *= s;
+	if (wi.z < 0.0) return 0.0;
 	float g = GGXVNDF(wo, normalize(wo+wi), surface.roughness*surface.roughness) * 0.5;
 	float l = max(sign(wo.z) * wi.z, 0.) * INV_PI;
 	float f = surface.metallic ? 1.0 : fresnel(wo, normalize(wo+wi), surface.ior);
