@@ -343,15 +343,26 @@ vec3 emission(vec3 wo) {
 
 
 
+/****************************************************************
+ * Utils.
+ ****************************************************************/
+ 
+ float luminance(vec3 c) {
+	// ACEScg luminance
+	return dot(c, vec3(0.2722287168, 0.6740817658, 0.0536895174));
+ }
+
+vec3 clampedIllumination(vec3 li) {
+	float l = luminance(li); 
+	return l < IndirectLightClamping ? li : li * IndirectLightClamping / l;
+}
+
+
+
 
 /****************************************************************
  * Function called by "3D-VDB.frag".
  ****************************************************************/
-
-vec3 clampedIllumination(vec3 li) {
-	float s = dot(li, vec3(0.33333)); 
-	return s < IndirectLightClamping ? li : li * IndirectLightClamping / s;
-}
 
 vec3 color(vec3 pos, vec3 dir) {
 	
@@ -368,25 +379,25 @@ vec3 color(vec3 pos, vec3 dir) {
 		float t = trace(pos, dir, -1., att);
 		vec3 lightColor;
 		if(hitLight(pos, dir, t, lightColor)) {
-			vec3 li = att * (linear2acescg * lightColor);
 			#ifndef MIS
 			if (computedShadows) {
 				break;
 			}
 			#endif
+			vec3 li = linear2acescg * lightColor;
 			if (i == 0) {
-				outCol += li;
+				outCol += att * li;
 			} else {
-				outCol += clampedIllumination(li);
+				outCol += att * clampedIllumination(li);
 			}
 			break;
 		}
 		if(t < 0.) {
-			vec3 li = att * (linear2acescg * background(dir));
+			vec3 li = linear2acescg * background(dir);
 			if (i <= 1) {
-				outCol += li;
+				outCol += att * li;
 			} else {
-				outCol += clampedIllumination(li);
+				outCol += att * clampedIllumination(li);
 			}
 			break;
 		}
@@ -423,11 +434,11 @@ vec3 color(vec3 pos, vec3 dir) {
 		#endif
 		
 		{
-			vec3 li = att * (linear2acescg * emission(V));
+			vec3 li = linear2acescg * emission(V);
 			if (i == 0) {
-				outCol += li;
+				outCol += att * li;
 			} else {
-				outCol += clampedIllumination(li);
+				outCol += att * clampedIllumination(li);
 			}
 		}
 		
@@ -469,27 +480,32 @@ vec3 color(vec3 pos, vec3 dir) {
 			lReflectance *= abs(lX.z);
 		}
 		if(i != Bounces) {
-			vec3 lAtt = att;
 			#ifndef MIS
 			computedShadows = true;
 			#endif
 			
+			vec3 lAtt = vec3(1.0);
 			float lt = trace(lPos, brdf2World * lX, lightDist, lAtt);
+			
 			vec3 directLight;
 			bool hit = hitLight(lPos, brdf2World * lX, lt, directLight);
 			directLight = float(hit) * (linear2acescg * directLight);
+			
 			vec3 li = lAtt * directLight * lReflectance;
 			if (i == 0) {
-				outCol += li;
+				outCol += att * li;
 			} else {
-				outCol += clampedIllumination(li);
+				outCol += att * clampedIllumination(li);
 			}
 		}
+		
 		att *= rReflectance;
+		
+		float lum = min(luminance(att), 1.0);
+		if (random() < 1.0 - lum) break;
+		att /= lum;
 			
 		dir = brdf2World * rX;
-		
-		if(dot(att, vec3(1)) <= 0.) break;
 	}
 	
 	return acescg2linear * outCol;		// we return sRGB for compatility with other buffer shaders / 3D cameras
