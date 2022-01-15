@@ -360,11 +360,20 @@ vec3 color(vec3 pos, vec3 dir) {
 	
 	vec3 att = vec3(1.), outCol = vec3(0.0);
 	
+	#ifndef MIS
+	bool computedShadows = false;
+	#endif
+	
 	for(int i = 0; i <= Bounces; i++) {
 		float t = trace(pos, dir, -1., att);
 		vec3 lightColor;
 		if(hitLight(pos, dir, t, lightColor)) {
 			vec3 li = att * (linear2acescg * lightColor);
+			#ifndef MIS
+			if (computedShadows) {
+				break;
+			}
+			#endif
 			if (i == 0) {
 				outCol += li;
 			} else {
@@ -438,8 +447,16 @@ vec3 color(vec3 pos, vec3 dir) {
 		vec3 lPos = pos;
 		vec3 rBrdf = linear2acescg * BRDF(V, rX);
 		vec3 lBrdf = linear2acescg * BRDF(V, lX);
+		
+		#ifdef MIS
 		float pdf1 = pdf11 + pdf12;
 		float pdf2 = pdf21 + pdf22;
+		#else
+		float pdf1 = pdf11;
+		float pdf2 = pdf22;
+		#endif
+		
+		
 		vec3 rReflectance = pdf1 > 0.0 ? rBrdf / pdf1 : vec3(0.0);
 		vec3 lReflectance = pdf2 > 0.0 ? lBrdf / pdf2 : vec3(0.0);
 		#ifdef volumetric
@@ -453,6 +470,10 @@ vec3 color(vec3 pos, vec3 dir) {
 		}
 		if(i != Bounces) {
 			vec3 lAtt = att;
+			#ifndef MIS
+			computedShadows = true;
+			#endif
+			
 			float lt = trace(lPos, brdf2World * lX, lightDist, lAtt);
 			vec3 directLight;
 			bool hit = hitLight(lPos, brdf2World * lX, lt, directLight);
