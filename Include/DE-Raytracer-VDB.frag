@@ -442,11 +442,11 @@ vec3 color(vec3 pos, vec3 dir) {
 			}
 		}
 		
-		vec3 prng = vec3(prng(PRNG_BASE + i * PRNG_BOUNCE + PRNG_BRDF_U),
+		vec3 rgn = vec3(prng(PRNG_BASE + i * PRNG_BOUNCE + PRNG_BRDF_U),
 						 prng(PRNG_BASE + i * PRNG_BOUNCE + PRNG_BRDF_V),
 						 prng(PRNG_BASE + i * PRNG_BOUNCE + PRNG_BRDF));
 		
-		vec3 rX = BRDFSample(V, prng);
+		vec3 rX = BRDFSample(V, rgn);
 		float pdf11 = BRDFPDF(V, rX);
 		float pdf12 = lightPDF(brdf2World * rX);
 		
