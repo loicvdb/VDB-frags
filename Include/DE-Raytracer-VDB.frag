@@ -502,7 +502,7 @@ vec3 color(vec3 pos, vec3 dir) {
 		att *= rReflectance;
 		
 		float lum = min(luminance(att), 1.0);
-		if (random() < 1.0 - lum) break;
+		if (prng(PRNG_BASE + i * PRNG_BOUNCE + PRNG_RR) < 1.0 - lum) break;
 		att /= lum;
 			
 		dir = brdf2World * rX;

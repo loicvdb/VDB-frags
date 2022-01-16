@@ -55,7 +55,8 @@ const int PRNG_BASE = 4;
 const int PRNG_BRDF_U = 0;
 const int PRNG_BRDF_V = 1;
 const int PRNG_BRDF = 2;
-const int PRNG_BOUNCE = 3;
+const int PRNG_RR = 3;
+const int PRNG_BOUNCE = 4;
 
 int prngSample;
 
