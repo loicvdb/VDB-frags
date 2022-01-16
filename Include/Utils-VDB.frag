@@ -24,18 +24,19 @@ vec3 ortho(vec3 v) {
 
 int hash(int i) {
 	i *= 0xB5297A4D;
-	i ^= i >> 12;
+	i ^= i >> 10;
 	i += 0x68E31DA4;
-	i ^= i >> 12;
+	i ^= i >> 10;
 	i *= bitfieldReverse(i);
-	i ^= i >> 12;
+	i ^= i >> 10;
 	i *= 0x1B56C4E9;
 	return i;
 }
 
 float intRangeToFloat(int i) {
-	const float invMaxInt = 1.0 / 4294967295.0;
-	return float(i) * invMaxInt + 0.5;
+	const float invMaxInt = intBitsToFloat(0x2F7FFFFF);
+	const float half = intBitsToFloat(0x3EFFFFFF);
+	return float(i) * invMaxInt + half;
 }
 
 int pixelHash = hash(int(gl_FragCoord.x) + int(gl_FragCoord.y) * 0x259e8118);
